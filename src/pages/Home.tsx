@@ -11,7 +11,7 @@ export default function Home() {
       <div className="">
         <header>
           <Logo />
-          <div className="flex items-center justify-center w-full py-1.5 my-6 text-sm font-bold text-white rounded-lg bg-primary-500">
+          <div className="flex items-center justify-center w-full py-1.5 my-6 sm:my-8 heading-3 font-bold text-white rounded-lg bg-primary-500">
             START YOUR ORDER
           </div>
           <SearchInput

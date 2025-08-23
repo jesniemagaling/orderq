@@ -70,3 +70,22 @@
     @apply font-poppins;
   }
 }
+
+@layer components {
+  .heading-1 {
+    font-family: poppins, sans-serif;
+    @apply text-[26px] font-medium sm:text-[32px];
+  }
+  .heading-2 {
+    font-family: poppins, sans-serif;
+    @apply text-xl font-medium sm:text-2xl;
+  }
+  .heading-3 {
+    font-family: poppins, sans-serif;
+    @apply text-sm font-medium sm:text-base;
+  }
+  .heading-4 {
+    font-family: poppins, sans-serif;
+    @apply text-xs font-medium sm:text-sm;
+  }
+}

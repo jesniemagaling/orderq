@@ -1,0 +1,56 @@
+[
+  {
+    "id": "burger-001",
+    "name": "Beef Burger",
+    "category": "Burgers",
+    "description": "Enjoy our classic beef burger featuring a juicy, flavorful patty served on a warm, toasted bun. It's perfectly complemented by fresh lettuce, ripe tomato, and our signature savory sauce for a truly satisfying experience.",
+    "price": 150,
+    "image": "/assets/images/beef-burger.png",
+    "available": true
+  },
+  {
+    "id": "pizza-001",
+    "name": "Margherita Pizza",
+    "category": "Pizza",
+    "description": "A timeless favorite with a thin crust, rich tomato sauce, fresh mozzarella, and a sprinkle of fragrant basil leaves.",
+    "price": 280,
+    "image": "/assets/images/margherita-pizza.png",
+    "available": true
+  },
+  {
+    "id": "chicken-001",
+    "name": "Fried Chicken",
+    "category": "Chicken",
+    "description": "Golden, crispy fried chicken with a juicy interior, seasoned to perfection for that irresistible crunch in every bite.",
+    "price": 180,
+    "image": "/assets/images/fried-chicken.png",
+    "available": true
+  },
+  {
+    "id": "dessert-001",
+    "name": "Eton Mess",
+    "category": "Desserts",
+    "description": "A delightful mix of crisp meringue, fresh strawberries, and whipped cream, creating a sweet and refreshing dessert.",
+    "price": 120,
+    "image": "/assets/images/eton-mess.png",
+    "available": true
+  },
+  {
+    "id": "burger-002",
+    "name": "Chicken Burger",
+    "category": "Burgers",
+    "description": "Crispy fried chicken fillet layered with crisp lettuce, creamy mayo, and tangy pickles in a soft bun.",
+    "price": 140,
+    "image": "/assets/images/chicken-burger.png",
+    "available": true
+  },
+  {
+    "id": "salad-001",
+    "name": "Caprese Salad",
+    "category": "Salads",
+    "description": "Fresh mozzarella, juicy tomatoes, and fragrant basil drizzled with extra virgin olive oil and balsamic glaze.",
+    "price": 160,
+    "image": "/assets/images/caprese-salad.png",
+    "available": true
+  }
+]
