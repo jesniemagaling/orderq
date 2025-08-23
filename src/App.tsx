@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import MainLayout from './components/layouts/MainLayout';
 import Home from './pages/Home';
 import Search from './pages/Search';
 import Menu from './pages/Menu';
@@ -12,17 +13,19 @@ import Receipt from './pages/Receipt';
 function App() {
   return (
     <Router>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/search" element={<Search />} />
-        <Route path="/menu" element={<Menu />} />
-        <Route path="/food/:id" element={<FoodDetails />} />
-        <Route path="/cart" element={<Cart />} />
-        <Route path="/orders" element={<Orders />} />
-        <Route path="/payment-method" element={<PaymentMethod />} />
-        <Route path="/order-status" element={<OrderStatus />} />
-        <Route path="/receipt" element={<Receipt />} />
-      </Routes>
+      <MainLayout>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/search" element={<Search />} />
+          <Route path="/menu" element={<Menu />} />
+          <Route path="/food/:id" element={<FoodDetails />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/orders" element={<Orders />} />
+          <Route path="/payment-method" element={<PaymentMethod />} />
+          <Route path="/order-status" element={<OrderStatus />} />
+          <Route path="/receipt" element={<Receipt />} />
+        </Routes>
+      </MainLayout>
     </Router>
   );
 }

@@ -1,3 +1,5 @@
+import defaultTheme from 'tailwindcss/defaultTheme';
+
 /** @type {import('tailwindcss').Config} */
 export default {
   darkMode: ['class'],
@@ -10,7 +12,9 @@ export default {
         sm: 'calc(var(--radius) - 4px)',
       },
       fontFamily: {
-        sans: ['Poppins', ...fontFamily.sans], // make Poppins the default
+        sans: ['Inter', ...defaultTheme.fontFamily.sans], // Primary
+        rubik: ['Rubik', 'sans-serif'], // Secondary
+        poppins: ['Poppins', 'sans-serif'],
       },
       colors: {
         background: 'hsl(var(--background))',
@@ -24,6 +28,7 @@ export default {
           foreground: 'hsl(var(--popover-foreground))',
         },
         primary: {
+          500: '#820D17',
           DEFAULT: 'hsl(var(--primary))',
           foreground: 'hsl(var(--primary-foreground))',
         },
