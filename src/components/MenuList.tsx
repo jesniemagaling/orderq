@@ -1,6 +1,6 @@
 // src/components/MenuList.tsx
 import { MenuItem } from '@/types/menu';
-import PopularMenuCard from './PopularMenuCard';
+import PopularMenuCard from './HomeMenuCard';
 import MenuCardSimple from './MenuCard';
 
 interface MenuListProps {

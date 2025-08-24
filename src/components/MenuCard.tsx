@@ -1,33 +1,48 @@
 import { MenuItem } from '@/types/menu';
 
-interface MenuCardSimpleProps {
+interface MenuListCardProps {
   item: MenuItem;
   onAdd?: (item: MenuItem) => void;
 }
 
-export default function MenuCardSimple({ item, onAdd }: MenuCardSimpleProps) {
-  const { name, price, image, description, available } = item;
+export default function MenuCard({ item, onAdd }: MenuListCardProps) {
+  const { name, price, image, available } = item;
 
   return (
-    <div className="flex flex-col p-4 transition border rounded-lg shadow hover:shadow-md">
-      <img
-        className="object-cover w-full h-48 rounded-md"
-        src={image}
-        alt={name}
-      />
-      <h3 className="mt-2 text-lg font-semibold">{name}</h3>
-      <p className="mt-1 text-sm text-gray-600">{description}</p>
-      <p className="mt-2 font-bold">₱ {price}</p>
-      {available && (
+    <div className="flex items-center justify-between w-full p-3 bg-white rounded-2xl shadow-dual max-w-[310px]">
+      <div className="flex-shrink-0 w-[58px] h-[48px] rounded-[10px] overflow-hidden">
+        <img
+          src={image}
+          alt={name}
+          className="object-cover w-full h-full rounded-[10px]"
+        />
+      </div>
+
+      <div className="flex flex-col flex-grow px-3">
+        <h3 className="heading-3">{name}</h3>
+        <p className="font-bold text-yellow-500 heading-3">₱ {price}</p>
+      </div>
+
+      {available ? (
         <button
-          className="px-4 py-2 mt-3 text-white transition bg-blue-600 rounded-md hover:bg-blue-500"
-          onClick={() => onAdd && onAdd(item)}
+          onClick={() => onAdd?.(item)}
+          className="flex items-center justify-center"
         >
-          Add to Cart
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M8 0C3.584 0 0 3.584 0 8C0 12.416 3.584 16 8 16C12.416 16 16 12.416 16 8C16 3.584 12.416 0 8 0ZM12 8.8H8.8V12H7.2V8.8H4V7.2H7.2V4H8.8V7.2H12V8.8Z"
+              fill="#0E803C"
+            />
+          </svg>
         </button>
-      )}
-      {!available && (
-        <span className="mt-3 font-semibold text-red-600">Unavailable</span>
+      ) : (
+        <span className="text-xs text-gray-400">Unavailable</span>
       )}
     </div>
   );

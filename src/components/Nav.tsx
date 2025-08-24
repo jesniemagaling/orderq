@@ -16,7 +16,7 @@ export default function Nav({
         {showLogo ? (
           <>
             <img
-              src="/images/orderq-logo.svg"
+              src="/icons/orderq-logo.svg"
               alt="OrderQ Logo"
               className="w-8 h-8 sm:w-12 sm:h-12"
             />

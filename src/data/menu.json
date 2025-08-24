@@ -6,7 +6,10 @@
     "description": "Enjoy our classic beef burger featuring a juicy, flavorful patty served on a warm, toasted bun. It's perfectly complemented by fresh lettuce, ripe tomato, and our signature savory sauce for a truly satisfying experience.",
     "price": 150,
     "image": "/images/beef-burger.png",
-    "available": true
+    "homeImage": "/images/burger.png",
+    "available": true,
+    "isPopular": true,
+    "isRecommended": true
   },
   {
     "id": "pizza-001",
@@ -15,7 +18,10 @@
     "description": "A timeless favorite with a thin crust, rich tomato sauce, fresh mozzarella, and a sprinkle of fragrant basil leaves.",
     "price": 280,
     "image": "/images/margherita-pizza.png",
-    "available": true
+    "homeImage": "/images/chicken.png",
+    "available": true,
+    "isPopular": false,
+    "isRecommended": false
   },
   {
     "id": "chicken-001",
@@ -24,7 +30,10 @@
     "description": "Golden, crispy fried chicken with a juicy interior, seasoned to perfection for that irresistible crunch in every bite.",
     "price": 180,
     "image": "/images/fried-chicken.png",
-    "available": true
+    "homeImage": "/images/chicken.png",
+    "available": true,
+    "isPopular": true,
+    "isRecommended": true
   },
   {
     "id": "dessert-001",
@@ -33,7 +42,10 @@
     "description": "A delightful mix of crisp meringue, fresh strawberries, and whipped cream, creating a sweet and refreshing dessert.",
     "price": 120,
     "image": "/images/eton-mess.png",
-    "available": true
+    "homeImage": "/images/chicken.png",
+    "available": true,
+    "isPopular": false,
+    "isRecommended": false
   },
   {
     "id": "burger-002",
@@ -42,7 +54,10 @@
     "description": "Crispy fried chicken fillet layered with crisp lettuce, creamy mayo, and tangy pickles in a soft bun.",
     "price": 140,
     "image": "/images/chicken-burger.png",
-    "available": true
+    "homeImage": "/images/chicken.png",
+    "available": true,
+    "isPopular": false,
+    "isRecommended": false
   },
   {
     "id": "salad-001",
@@ -51,6 +66,10 @@
     "description": "Fresh mozzarella, juicy tomatoes, and fragrant basil drizzled with extra virgin olive oil and balsamic glaze.",
     "price": 160,
     "image": "/images/caprese-salad.png",
-    "available": true
+    "homeImage": "/images/chicken.png",
+    "available": true,
+    "tag": "popular",
+    "isPopular": false,
+    "isRecommended": false
   }
 ]

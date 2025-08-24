@@ -20,6 +20,9 @@ export default {
         'deep-red-gradient':
           'linear-gradient(to right, rgba(130,13,23,0.9), rgba(183,30,43,1))',
       },
+      boxShadow: {
+        dual: '0px -1px 12px 0px rgba(0,0,0,0.24), 0px 2px 7px 1px rgba(0,0,0,0.25)',
+      },
       colors: {
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',

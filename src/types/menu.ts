@@ -5,5 +5,8 @@ export interface MenuItem {
   description: string;
   price: number;
   image: string;
+  homeImage: string;
   available: boolean;
+  isPopular: boolean;
+  isRecommended: boolean;
 }
