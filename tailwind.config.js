@@ -16,6 +16,10 @@ export default {
         rubik: ['Rubik', 'sans-serif'], // Secondary
         poppins: ['Poppins', 'sans-serif'],
       },
+      backgroundImage: {
+        'deep-red-gradient':
+          'linear-gradient(to right, rgba(130,13,23,0.9), rgba(183,30,43,1))',
+      },
       colors: {
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',

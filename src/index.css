@@ -78,7 +78,7 @@
   }
   .heading-2 {
     font-family: poppins, sans-serif;
-    @apply text-xl font-medium sm:text-2xl;
+    @apply text-xl font-normal sm:text-2xl;
   }
   .heading-3 {
     font-family: poppins, sans-serif;
