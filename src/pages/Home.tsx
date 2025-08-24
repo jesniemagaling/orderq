@@ -1,19 +1,18 @@
+import { useState } from 'react';
 import Logo from '@/components/Nav';
 import SearchInput from '@/components/SearchInput';
-import { useState } from 'react';
-import { MenuItem } from '@/types/menu';
-import menuData from '@/data/menu.json';
 import PromotionCard from '@/components/PromotionCard';
-import promotions from '@/data/promotions.json';
 import HomeMenuCard from '@/components/HomeMenuCard';
+import promotions from '@/data/promotions.json';
+import { useMenu } from '@/hooks/useMenu';
 
 export default function Home() {
   const [query1, setQuery1] = useState('');
-  const [menuItems, setMenuItems] = useState<MenuItem[]>(menuData);
+
+  const { menuItems, loading, error } = useMenu();
 
   const popularMenu = menuItems.filter((item) => item.isPopular);
   const recommendedMenu = menuItems.filter((item) => item.isRecommended);
-
   const filteredMenu = menuItems.filter((item) =>
     item.name.toLowerCase().includes(query1.toLowerCase())
   );
@@ -47,25 +46,38 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="gap-10 mt-6 md:grid md:grid-cols-2">
-        <div className="py-6">
-          <h2 className="mb-6 heading-2">Popular</h2>
-          <div className="flex flex-wrap gap-8">
-            {popularMenu.map((item) => (
-              <HomeMenuCard key={item.id} item={item} />
-            ))}
-          </div>
-        </div>
+      {loading && <p className="mt-6 text-center">Loading menu...</p>}
+      {error && <p className="mt-6 text-center text-red-500">{error}</p>}
 
-        <div className="py-6">
-          <h2 className="mb-6 heading-2">Recommended</h2>
-          <div className="flex flex-wrap gap-8">
-            {recommendedMenu.map((item) => (
-              <HomeMenuCard key={item.id} item={item} />
-            ))}
+      {!loading && !error && (
+        <section className="gap-10 mt-6 md:grid md:grid-cols-2">
+          <div className="py-6">
+            <h2 className="mb-6 heading-2">Popular</h2>
+            <div className="flex flex-wrap gap-8">
+              {popularMenu.length > 0 ? (
+                popularMenu.map((item) => (
+                  <HomeMenuCard key={item.id} item={item} />
+                ))
+              ) : (
+                <p>No popular menu items available.</p>
+              )}
+            </div>
           </div>
-        </div>
-      </section>
+
+          <div className="py-6">
+            <h2 className="mb-6 heading-2">Recommended</h2>
+            <div className="flex flex-wrap gap-8">
+              {recommendedMenu.length > 0 ? (
+                recommendedMenu.map((item) => (
+                  <HomeMenuCard key={item.id} item={item} />
+                ))
+              ) : (
+                <p>No recommended menu items available.</p>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
     </>
   );
 }

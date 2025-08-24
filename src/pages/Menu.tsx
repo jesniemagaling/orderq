@@ -2,20 +2,26 @@ import Nav from '@/components/Nav';
 import SearchInput from '@/components/SearchInput';
 import { useState } from 'react';
 import { MenuItem } from '@/types/menu';
-import menuData from '@/data/menu.json';
 import MenuCard from '@/components/MenuCard';
 import categoriesData from '@/data/categories.json';
 import { Category } from '@/types/category';
 import CategoryList from '@/components/CategoryList';
+import { useMenu } from '@/hooks/useMenu';
 
 export default function Menu() {
   const [query1, setQuery1] = useState('');
-  const [menuItems, setMenuItems] = useState<MenuItem[]>(menuData);
   const [activeCategory, setActiveCategory] = useState<string>('all');
 
-  const filteredItems = menuItems.filter((item) =>
-    item.name.toLowerCase().includes(query1.toLowerCase())
-  );
+  const { menuItems, loading, error } = useMenu();
+
+  const filteredItems = menuItems.filter((item: MenuItem) => {
+    const matchesSearch = item.name
+      .toLowerCase()
+      .includes(query1.toLowerCase());
+    const matchesCategory =
+      activeCategory === 'all' || item.category === activeCategory;
+    return matchesSearch && matchesCategory;
+  });
 
   return (
     <>
@@ -38,18 +44,24 @@ export default function Menu() {
         </p>
       </div>
 
-      <div className="grid grid-cols-[repeat(auto-fit,_minmax(240px,_1fr))] gap-4 p-4 overflow-hidden">
-        {filteredItems.length > 0 ? (
-          filteredItems.map((item) => (
-            <MenuCard
-              key={item.id}
-              item={item}
-              onAdd={(menuItem) => console.log('Added:', menuItem)}
-            />
-          ))
-        ) : (
-          <p className="text-center text-gray-500">No items found</p>
-        )}
+      {loading && <p className="text-center">Loading menu...</p>}
+      {error && <p className="text-center text-red-500">{error}</p>}
+
+      <div className="grid grid-cols-[repeat(auto-fit,_minmax(260px,_1fr))] gap-4 p-4 overflow-hidden">
+        {!loading && !error && filteredItems.length > 0
+          ? filteredItems.map((item) => (
+              <MenuCard
+                key={item.id}
+                item={item}
+                onAdd={(menuItem) => console.log('Added:', menuItem)}
+              />
+            ))
+          : !loading &&
+            !error && (
+              <p className="text-center text-gray-500 col-span-full">
+                No items found
+              </p>
+            )}
       </div>
     </>
   );
