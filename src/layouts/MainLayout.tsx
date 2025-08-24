@@ -1,4 +1,5 @@
 import React from 'react';
+import BottomNavbar from '@/components/BottomNavBar';
 
 export default function MainLayout({
   children,
@@ -6,14 +7,10 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   return (
-    <main
-      className="p-4
-      mx-auto h-full
-      max-w-[1024px] max-h-[1366px]  // for tablets/phones
-      bg-white shadow-md
-    "
-    >
-      {children}
-    </main>
+    <div className="relative mx-auto h-full max-w-[1024px] max-h-[1366px] bg-white shadow-md flex flex-col">
+      <main className="flex-1 p-4 pb-20 overflow-y-auto">{children}</main>
+
+      <BottomNavbar />
+    </div>
   );
 }
