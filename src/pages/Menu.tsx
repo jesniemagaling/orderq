@@ -38,10 +38,6 @@ export default function Menu() {
           activeCategory={activeCategory}
           onSelect={(categoryId) => setActiveCategory(categoryId)}
         />
-
-        <p className="mt-4 text-sm text-gray-600">
-          Selected Category: {activeCategory}
-        </p>
       </div>
 
       {loading && <p className="text-center">Loading menu...</p>}

@@ -21,7 +21,6 @@ export default function CategoryList({
             onClick={() => onSelect(cat.id)}
             className="flex flex-col items-center focus:outline-none"
           >
-            {/* Image Container */}
             <div
               className={`flex items-center justify-center w-16 h-16 rounded-2xl transition 
               ${isActive ? 'bg-red-700' : 'bg-transparent'}`}
@@ -33,7 +32,6 @@ export default function CategoryList({
               />
             </div>
 
-            {/* Category Name */}
             <span
               className={`mt-2 text-sm font-medium ${
                 isActive ? 'text-red-700' : 'text-gray-500'
