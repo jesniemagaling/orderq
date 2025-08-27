@@ -1,4 +1,5 @@
 import { MenuItem } from '@/types/menu';
+import { Link } from 'react-router-dom';
 
 interface MenuListCardProps {
   item: MenuItem;
@@ -6,22 +7,24 @@ interface MenuListCardProps {
 }
 
 export default function MenuCard({ item, onAdd }: MenuListCardProps) {
-  const { name, price, image, available } = item;
+  const { id, name, price, image, available } = item;
 
   return (
     <div className="flex items-center justify-between w-full p-3 bg-white rounded-2xl shadow-dual max-w-[310px]">
-      <div className="flex-shrink-0 w-[58px] h-[48px] rounded-[10px] overflow-hidden">
-        <img
-          src={image}
-          alt={name}
-          className="object-cover w-full h-full rounded-[10px]"
-        />
-      </div>
+      <Link to={`/menu/${id}`} className="flex items-center flex-grow">
+        <div className="flex-shrink-0 w-[58px] h-[48px] rounded-[10px] overflow-hidden">
+          <img
+            src={image}
+            alt={name}
+            className="object-cover w-full h-full rounded-[10px]"
+          />
+        </div>
 
-      <div className="flex flex-col flex-grow px-3">
-        <h3 className="heading-3">{name}</h3>
-        <p className="font-bold text-yellow-500 heading-3">₱ {price}</p>
-      </div>
+        <div className="flex flex-col flex-grow px-3">
+          <h3 className="heading-3">{name}</h3>
+          <p className="font-bold text-yellow-500 heading-3">₱ {price}</p>
+        </div>
+      </Link>
 
       {available ? (
         <button
