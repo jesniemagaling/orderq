@@ -7,12 +7,13 @@ import categoriesData from '@/data/categories.json';
 import { Category } from '@/types/category';
 import CategoryList from '@/components/CategoryList';
 import { useMenu } from '@/hooks/useMenu';
+import { useCartContext } from '@/context/CartContext';
 
 export default function Menu() {
   const [query1, setQuery1] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
-
   const { menuItems, loading, error } = useMenu();
+  const { addToCart } = useCartContext();
 
   const filteredItems = menuItems.filter((item: MenuItem) => {
     const matchesSearch = item.name
@@ -49,7 +50,7 @@ export default function Menu() {
               <MenuCard
                 key={item.id}
                 item={item}
-                onAdd={(menuItem) => console.log('Added:', menuItem)}
+                onAdd={(menuItem) => addToCart(menuItem)}
               />
             ))
           : !loading &&

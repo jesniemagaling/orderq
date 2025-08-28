@@ -1,5 +1,7 @@
 import { MenuItem } from '@/types/menu';
 import { Link } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import { useCartContext } from '@/context/CartContext';
 
 interface MenuListCardProps {
   item: MenuItem;
@@ -8,6 +10,12 @@ interface MenuListCardProps {
 
 export default function MenuCard({ item, onAdd }: MenuListCardProps) {
   const { id, name, price, image, available } = item;
+  const { addToCart } = useCartContext();
+
+  const handleAddToCart = () => {
+    addToCart(item);
+    toast.success(`${item.name} added to cart!`);
+  };
 
   return (
     <div className="flex items-center justify-between w-full p-3 bg-white rounded-2xl shadow-dual max-w-[310px]">
@@ -28,12 +36,12 @@ export default function MenuCard({ item, onAdd }: MenuListCardProps) {
 
       {available ? (
         <button
-          onClick={() => onAdd?.(item)}
-          className="flex items-center justify-center"
+          onClick={handleAddToCart}
+          className="flex items-center justify-center transition-transform rounded-full hover:scale-110"
         >
           <svg
-            width="16"
-            height="16"
+            width="20"
+            height="20"
             viewBox="0 0 16 16"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"

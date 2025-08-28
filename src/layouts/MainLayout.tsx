@@ -1,5 +1,7 @@
 import React from 'react';
 import BottomNavbar from '@/components/BottomNavBar';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export default function MainLayout({
   children,
@@ -13,6 +15,7 @@ export default function MainLayout({
       </main>
 
       <BottomNavbar />
+      <ToastContainer position="top-right" autoClose={3000} />
     </div>
   );
 }

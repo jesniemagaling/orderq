@@ -5,16 +5,29 @@ import menuData from '@/data/menu.json';
 import { ChevronLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { toast } from 'react-toastify';
+import { useCartContext } from '@/context/CartContext';
 
 export default function FoodDetails() {
   const { id } = useParams<{ id: string }>();
   const [food, setFood] = useState<MenuItem | null>(null);
+  const { addToCart } = useCartContext();
 
   useEffect(() => {
-    const selected = menuData.menus.find((item) => item.id === id);
-    setFood(selected || null);
+    if (id) {
+      const foundFood = menuData.menus.find((item) => String(item.id) === id);
+      setFood(foundFood || null);
+    }
   }, [id]);
 
+  const handleAddToCart = () => {
+    if (food) {
+      addToCart(food);
+      toast.success(`${food.name} added to cart!`, { autoClose: 1200 });
+    }
+  };
+
+  // 🔹 Show error if food not found
   if (!food) {
     return <p className="p-6 text-gray-500">Food item not found.</p>;
   }
@@ -63,7 +76,7 @@ export default function FoodDetails() {
           ₱{food.price}
         </p>
         {food.available ? (
-          <Button variant="default" className="py-6">
+          <Button onClick={handleAddToCart} variant="default" className="py-6">
             Add to Cart
           </Button>
         ) : (
