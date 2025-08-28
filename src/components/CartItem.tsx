@@ -8,7 +8,7 @@ export default function CartItem({
   onRemove,
 }: CartItemProps) {
   return (
-    <div className="flex items-center justify-between py-2 border-b border-gray-200">
+    <div className="flex items-center justify-between py-2">
       <div className="flex items-center gap-5">
         <img
           src={item.image}

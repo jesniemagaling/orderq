@@ -36,7 +36,7 @@ export default function Nav({
       <nav>
         <Link
           to="/cart"
-          className="flex items-center gap-1 px-2 py-2 bg-white rounded-full shadow-md hover:opacity-80"
+          className="flex items-center gap-1 p-2 bg-white rounded-full hover:opacity-80"
         >
           <div className="relative">
             <svg
@@ -54,7 +54,7 @@ export default function Nav({
               />
             </svg>
             {cartCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5">
+              <span className="absolute sm:-top-1 sm:-right-1 -top-2 -right-2 bg-primary-500 text-white sm:text-xs text-[10px] rounded-full px-1.5 py-0.5">
                 {cartCount}
               </span>
             )}

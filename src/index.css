@@ -89,3 +89,30 @@
     @apply text-xs font-medium sm:text-sm;
   }
 }
+
+.Toastify__toast {
+  font-size: 1rem;
+  padding: 12px 16px;
+  border-radius: 12px;
+  margin-top: 1rem;
+}
+
+@media (max-width: 640px) {
+  .Toastify__toast {
+    font-size: 0.8rem;
+    padding: 8px 10px;
+    max-width: 80%;
+    margin: 0 auto;
+    margin-top: 1rem;
+  }
+
+  .Toastify__toast-container {
+    width: 100%;
+    right: 0;
+    background-color: transparent;
+  }
+  .Toastify__toast-icon svg {
+    width: 17px;
+    height: 17px;
+  }
+}

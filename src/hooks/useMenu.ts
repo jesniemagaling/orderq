@@ -1,4 +1,3 @@
-// src/hooks/useMenu.ts
 import { useEffect, useState } from 'react';
 import { MenuItem } from '@/types/menu';
 
