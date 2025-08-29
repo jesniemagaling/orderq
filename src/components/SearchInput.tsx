@@ -6,6 +6,7 @@ interface SearchInputProps {
   onChange: (val: string) => void;
   placeholder?: string;
   className?: string;
+  onEnter?: () => void;
 }
 
 export default function SearchInput({
@@ -13,6 +14,7 @@ export default function SearchInput({
   onChange,
   placeholder = 'Search...',
   className = '',
+  onEnter,
 }: SearchInputProps) {
   return (
     <div className={`relative w-full my-4 ${className}`}>
@@ -21,6 +23,11 @@ export default function SearchInput({
       <Input
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && onEnter) {
+            onEnter();
+          }
+        }}
         placeholder={placeholder}
         className="pl-10 sm:pl-12"
       />

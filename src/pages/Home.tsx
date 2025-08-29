@@ -5,17 +5,20 @@ import PromotionCard from '@/components/PromotionCard';
 import HomeMenuCard from '@/components/HomeMenuCard';
 import promotions from '@/data/promotions.json';
 import { useMenu } from '@/hooks/useMenu';
+import { useNavigate } from 'react-router-dom';
 
 export default function Home() {
   const [query1, setQuery1] = useState('');
-
   const { menuItems, loading, error } = useMenu();
+  const navigate = useNavigate();
 
   const popularMenu = menuItems.filter((item) => item.isPopular);
   const recommendedMenu = menuItems.filter((item) => item.isRecommended);
-  const filteredMenu = menuItems.filter((item) =>
-    item.name.toLowerCase().includes(query1.toLowerCase())
-  );
+  const handleSearch = () => {
+    if (query1.trim()) {
+      navigate(`/Menu?search=${encodeURIComponent(query1.trim())}`);
+    }
+  };
 
   return (
     <>
@@ -28,6 +31,7 @@ export default function Home() {
           value={query1}
           onChange={setQuery1}
           placeholder="What do you need?"
+          onEnter={handleSearch}
         />
       </header>
 
