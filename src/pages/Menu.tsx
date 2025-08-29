@@ -44,7 +44,7 @@ export default function Menu() {
       {loading && <p className="text-center">Loading menu...</p>}
       {error && <p className="text-center text-red-500">{error}</p>}
 
-      <div className="grid grid-cols-[repeat(auto-fit,_minmax(260px,_1fr))] gap-4 p-4 overflow-hidden">
+      <div className="grid grid-cols-[repeat(auto-fit,_minmax(260px,_1fr))] gap-4 p-4 overflow-hidden place-items-center sm:place-items-start">
         {!loading && !error && filteredItems.length > 0
           ? filteredItems.map((item) => (
               <MenuCard
