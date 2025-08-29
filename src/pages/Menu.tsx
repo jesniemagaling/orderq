@@ -1,6 +1,7 @@
 import Nav from '@/components/Nav';
 import SearchInput from '@/components/SearchInput';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { MenuItem } from '@/types/menu';
 import MenuCard from '@/components/MenuCard';
 import categoriesData from '@/data/categories.json';
@@ -10,10 +11,19 @@ import { useMenu } from '@/hooks/useMenu';
 import { useCartContext } from '@/context/CartContext';
 
 export default function Menu() {
-  const [query1, setQuery1] = useState('');
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const searchQuery = searchParams.get('search') || '';
+
+  const [query1, setQuery1] = useState(searchQuery);
   const [activeCategory, setActiveCategory] = useState<string>('all');
+
   const { menuItems, loading, error } = useMenu();
   const { addToCart } = useCartContext();
+
+  useEffect(() => {
+    setQuery1(searchQuery);
+  }, [searchQuery]);
 
   const filteredItems = menuItems.filter((item: MenuItem) => {
     const matchesSearch = item.name
