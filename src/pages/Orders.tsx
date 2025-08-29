@@ -7,7 +7,9 @@ export default function Orders() {
   const { cart, totalPrice } = useCart();
 
   const tax = totalPrice * 0.1;
-  const total = cart.reduce((sum, item) => sum + item.price, 0) + tax;
+  const total =
+    cart.reduce((sum, item, quantity) => sum + item.price * item.quantity, 0) +
+    tax;
 
   return (
     <>
