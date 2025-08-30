@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { useCartContext } from '@/context/CartContext';
 import { toast } from 'react-toastify';
 import { MenuItem } from '@/types/menu';
+import { Separator } from '@/components/ui/separator';
 
 export default function Cart() {
   const {
@@ -49,15 +50,17 @@ export default function Cart() {
               />
             ))}
 
-            <div className="flex items-center justify-between pt-4 m-6 border-t border-gray-200">
+            <Separator />
+
+            <div className="flex items-center justify-between m-6 ">
               <p className="text-lg font-medium">Total:</p>
               <p className="text-xl font-bold text-yellow-500">
                 ₱ {totalPrice.toLocaleString()}
               </p>
             </div>
-            <Link to="/Orders" className="flex justify-center w-full">
+            <Link to="/payment-method" className="flex justify-center w-full">
               <Button variant="default" className="py-6">
-                Order Now
+                Proceed to Pay
               </Button>
             </Link>
           </>
