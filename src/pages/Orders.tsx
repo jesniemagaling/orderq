@@ -16,7 +16,7 @@ export default function Orders() {
     <>
       <Nav title="Order History"></Nav>
       {cart.length === 0 ? (
-        <p className="mt-8 text-center text-gray-500">Your cart is empty.</p>
+        <p className="mt-8 text-center text-gray-500">No recent orders.</p>
       ) : (
         <div className="flex flex-col mt-6 space-y-6">
           <p className="text-sm text-right text-primary-500">

@@ -68,8 +68,7 @@ export default function PaymentPage() {
 
   const tax = totalPrice * 0.1;
   const total =
-    cart.reduce((sum, item, quantity) => sum + item.price * item.quantity, 0) +
-    tax;
+    cart.reduce((sum, item) => sum + item.price * item.quantity, 0) + tax;
 
   const handleConfirm = () => {};
 
