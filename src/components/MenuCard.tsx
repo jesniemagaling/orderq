@@ -1,7 +1,7 @@
 import { MenuItem } from '@/types/menu';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { useCartContext } from '@/context/CartContext';
+import { useCart } from '@/context/CartContext';
 
 interface MenuListCardProps {
   item: MenuItem;
@@ -10,7 +10,7 @@ interface MenuListCardProps {
 
 export default function MenuCard({ item, onAdd }: MenuListCardProps) {
   const { id, name, price, image, available } = item;
-  const { addToCart } = useCartContext();
+  const { addToCart } = useCart();
 
   const handleAddToCart = () => {
     addToCart(item);

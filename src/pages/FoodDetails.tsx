@@ -6,13 +6,12 @@ import { ChevronLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { toast } from 'react-toastify';
-import { useCart, useCartContext } from '@/context/CartContext';
+import { useCart } from '@/context/CartContext';
 
 export default function FoodDetails() {
   const { id } = useParams<{ id: string }>();
   const [food, setFood] = useState<MenuItem | null>(null);
-  const { addToCart } = useCartContext();
-  const { cartCount } = useCart();
+  const { addToCart, cartCount } = useCart();
   const navigate = useNavigate();
 
   useEffect(() => {

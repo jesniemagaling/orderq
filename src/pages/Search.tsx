@@ -4,11 +4,11 @@ import { useState } from 'react';
 import { MenuItem } from '@/types/menu';
 import menuData from '@/data/menu.json';
 import MenuCard from '@/components/MenuCard';
-import { useCartContext } from '@/context/CartContext';
+import { useCart } from '@/context/CartContext';
 
 export default function Search() {
   const [query1, setQuery1] = useState('');
-  const { addToCart } = useCartContext();
+  const { addToCart } = useCart();
   const items = menuData.menus as MenuItem[];
 
   const filteredItems = items.filter((item) =>

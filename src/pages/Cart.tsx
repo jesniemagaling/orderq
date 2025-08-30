@@ -2,7 +2,7 @@ import CartItem from '@/components/CartItem';
 import Nav from '@/components/Nav';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { useCartContext } from '@/context/CartContext';
+import { useCart } from '@/context/CartContext';
 import { toast } from 'react-toastify';
 import { MenuItem } from '@/types/menu';
 import { Separator } from '@/components/ui/separator';
@@ -14,7 +14,7 @@ export default function Cart() {
     increaseQuantity,
     decreaseQuantity,
     totalPrice,
-  } = useCartContext();
+  } = useCart();
 
   const handleIncrease = (item: MenuItem, name: string) => {
     increaseQuantity(item);

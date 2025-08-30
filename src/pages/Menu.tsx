@@ -8,7 +8,7 @@ import categoriesData from '@/data/categories.json';
 import { Category } from '@/types/category';
 import CategoryList from '@/components/CategoryList';
 import { useMenu } from '@/hooks/useMenu';
-import { useCartContext } from '@/context/CartContext';
+import { useCart } from '@/context/CartContext';
 
 export default function Menu() {
   const location = useLocation();
@@ -19,7 +19,7 @@ export default function Menu() {
   const [activeCategory, setActiveCategory] = useState<string>('all');
 
   const { menuItems, loading, error } = useMenu();
-  const { addToCart } = useCartContext();
+  const { addToCart } = useCart();
 
   useEffect(() => {
     setQuery1(searchQuery);
