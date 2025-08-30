@@ -32,9 +32,9 @@ export default function Cart() {
   };
 
   return (
-    <div className="max-w-xl mx-auto">
+    <>
       <Nav title="Your Cart" />
-      <div className="p-2 pt-2 bg-white sm:p-4 rounded-xl">
+      <div className="max-w-xl p-2 pt-2 mx-auto bg-white sm:p-4 rounded-xl">
         {cart.length === 0 ? (
           <p className="mt-6 text-center text-gray-500">Your cart is empty.</p>
         ) : (
@@ -66,6 +66,6 @@ export default function Cart() {
           </>
         )}
       </div>
-    </div>
+    </>
   );
 }

@@ -70,7 +70,7 @@ export default function Orders() {
 
                 <Separator />
 
-                <Link to="/Order-status" className="flex justify-center w-full">
+                <Link to="/order-status" className="flex justify-center w-full">
                   <Button variant="default" className="py-6">
                     Track Order
                   </Button>

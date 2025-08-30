@@ -14,7 +14,7 @@ type CartContextType = {
   cart: CartItem[];
   orders: Order[];
   cartCount: number;
-  addToCart: (item: MenuItem) => void;
+  addToCart: (item: MenuItem, quantity: number) => void;
   removeFromCart: (item: MenuItem) => void;
   increaseQuantity: (item: MenuItem) => void;
   decreaseQuantity: (item: MenuItem) => void;
@@ -46,15 +46,15 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  const addToCart = (item: MenuItem) => {
+  const addToCart = (item: MenuItem, quantity: number = 1) => {
     setCart((prevCart) => {
       const existingItem = prevCart.find((i) => i.id === item.id);
       if (existingItem) {
         return prevCart.map((i) =>
-          i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
+          i.id === item.id ? { ...i, quantity: i.quantity + quantity } : i
         );
       }
-      return [...prevCart, { ...item, quantity: 1 }];
+      return [...prevCart, { ...item, quantity }];
     });
   };
 

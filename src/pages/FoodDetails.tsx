@@ -7,12 +7,22 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { toast } from 'react-toastify';
 import { useCart } from '@/context/CartContext';
+import { Plus, Minus } from 'lucide-react';
 
 export default function FoodDetails() {
   const { id } = useParams<{ id: string }>();
   const [food, setFood] = useState<MenuItem | null>(null);
+  const [quantity, setQuantity] = useState<number>(1);
   const { addToCart, cartCount } = useCart();
   const navigate = useNavigate();
+
+  const handleIncrease = () => {
+    setQuantity((q) => Math.min(q + 1, 99));
+  };
+
+  const handleDecrease = () => {
+    setQuantity((q) => Math.max(1, q - 1));
+  };
 
   useEffect(() => {
     if (id) {
@@ -22,10 +32,12 @@ export default function FoodDetails() {
   }, [id]);
 
   const handleAddToCart = () => {
-    if (food) {
-      addToCart(food);
-      toast.success(`${food.name} added to cart!`, { autoClose: 1200 });
-    }
+    if (!food) return;
+    addToCart(food, quantity);
+    toast.success(`${quantity} ${food.name} added to cart!`, {
+      autoClose: 1200,
+    });
+    setQuantity(1);
   };
 
   if (!food) {
@@ -76,6 +88,26 @@ export default function FoodDetails() {
           <span className="text-2xl text-black">Description</span>
           {food.description}
         </p>
+        <div className="flex items-center gap-3">
+          <span className="sm:text-lg">Quantity:</span>
+          <button
+            onClick={handleDecrease}
+            className="text-lg text-primary-500 hover:opacity-70"
+            aria-label="Decrease quantity"
+          >
+            <Minus size={16} />
+          </button>
+          <span className="w-2 text-sm font-medium text-center sm:text-base">
+            {quantity}
+          </span>
+          <button
+            onClick={handleIncrease}
+            className="text-lg text-primary-500 hover:opacity-70"
+            aria-label="Increase quantity"
+          >
+            <Plus size={16} />
+          </button>
+        </div>
         <p className="text-base font-bold text-yellow-500 sm:text-lg">
           <span className="text-lg font-medium text-black sm:text-xl">
             Price:{' '}
