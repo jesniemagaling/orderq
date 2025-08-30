@@ -31,7 +31,7 @@ export default function Orders() {
 
             return (
               <div key={orderIndex} className="space-y-4">
-                <p className="text-sm text-right text-primary-500">
+                <p className="px-2 text-sm text-right text-primary-500">
                   {orderDate}{' '}
                   <span className="text-black">&nbsp;&nbsp;|&nbsp;&nbsp;</span>
                   Table#: <span className="text-black">13</span>

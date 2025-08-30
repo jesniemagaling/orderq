@@ -22,15 +22,13 @@ export default function Search() {
     <>
       <Nav title="Search" />
 
-      <div className="p-4">
-        <SearchInput
-          value={query1}
-          onChange={setQuery1}
-          placeholder="What do you need?"
-        />
-      </div>
+      <SearchInput
+        value={query1}
+        onChange={setQuery1}
+        placeholder="What do you need?"
+      />
 
-      <div className="grid grid-cols-[repeat(auto-fit,_minmax(260px,_1fr))] gap-4 p-4 place-items-center sm:place-items-start">
+      <div className="grid grid-cols-[repeat(auto-fit,_minmax(260px,_1fr))] gap-4 place-items-center sm:place-items-start">
         {displayItems.length > 0 ? (
           displayItems.map((item) => (
             <MenuCard

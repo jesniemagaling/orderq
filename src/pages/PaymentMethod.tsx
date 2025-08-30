@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import Nav from '@/components/Nav';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
+import { toast } from 'react-toastify';
 
 interface PaymentMethod {
   id: string;
@@ -71,7 +72,10 @@ export default function PaymentPage() {
 
   const handleConfirm = () => {
     checkout();
-    navigate('/orders');
+    toast.success('Payment Successful!');
+    setTimeout(() => {
+      navigate('/orders');
+    }, 3600);
   };
 
   return (
@@ -81,7 +85,7 @@ export default function PaymentPage() {
       <RadioGroup
         value={selectedMethod}
         onValueChange={setSelectedMethod}
-        className="px-4 space-y-3"
+        className="px-6 space-y-3 sm:px-4"
       >
         {paymentMethods.map((method) => {
           const rid = `pm-${method.id}`;
