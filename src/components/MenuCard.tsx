@@ -8,7 +8,7 @@ interface MenuListCardProps {
   onAdd?: (item: MenuItem) => void;
 }
 
-export default function MenuCard({ item, onAdd }: MenuListCardProps) {
+export default function MenuCard({ item }: MenuListCardProps) {
   const { id, name, price, image, available } = item;
   const { addToCart } = useCart();
 

@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import Nav from '@/components/Nav';
-import { Link } from 'react-router-dom';
-
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 
 interface PaymentMethod {
@@ -64,13 +63,16 @@ const paymentMethods: PaymentMethod[] = [
 export default function PaymentPage() {
   const [selectedMethod, setSelectedMethod] = useState('applepay');
 
-  const { cart, totalPrice } = useCart();
-
+  const navigate = useNavigate();
+  const { cart, totalPrice, checkout } = useCart();
   const tax = totalPrice * 0.1;
   const total =
     cart.reduce((sum, item) => sum + item.price * item.quantity, 0) + tax;
 
-  const handleConfirm = () => {};
+  const handleConfirm = () => {
+    checkout();
+    navigate('/orders');
+  };
 
   return (
     <div className="max-w-md mx-auto space-y-6">
