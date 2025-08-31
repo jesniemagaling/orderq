@@ -58,13 +58,13 @@ export default function Orders() {
                   <div className="grid grid-cols-[2fr_1fr_1fr] py-1 text-sm sm:text-base border-b border-gray-100 text-gray-600">
                     <span>Tax 10%</span>
                     <span className="text-center">-</span>
-                    <span className="text-right">₱{tax.toFixed(2)}</span>
+                    <span className="text-right">₱{tax}</span>
                   </div>
 
                   <div className="grid grid-cols-[2fr_1fr_1fr] mt-2 font-medium text-sm sm:text-lg">
                     <span>Total Amount</span>
                     <span></span>
-                    <span className="text-right">₱{total.toFixed(2)}</span>
+                    <span className="text-right">₱{total}</span>
                   </div>
                 </div>
 

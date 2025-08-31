@@ -2,7 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { MenuItem } from '@/types/menu';
 import menuData from '@/data/menu.json';
-import { ChevronLeft } from 'lucide-react';
+import BackButton from '@/components/BackButton';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { toast } from 'react-toastify';
@@ -47,9 +47,7 @@ export default function FoodDetails() {
   return (
     <div className="grid items-center justify-center gap-4">
       <div className="flex items-center justify-between">
-        <button onClick={() => navigate(-1)}>
-          <ChevronLeft className="w-[28px] h-[28px] sm:w-[36px] sm:h-[36px] text-gray-700" />
-        </button>
+        <BackButton size={36} />
         <Link
           to="/cart"
           className="flex items-center gap-1 px-2 py-2 bg-white rounded-full hover:opacity-80"
