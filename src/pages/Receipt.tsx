@@ -14,10 +14,12 @@ export default function Receipt() {
 
   const { orderId } = useParams();
   const { orders } = useCart();
-
   const order = orders.find((o) => o.id === orderId);
 
   if (!order) return <p className="mt-6 text-center">Receipt not found.</p>;
+
+  const tax = order.total * 0.1;
+  const totalWithTax = order.total + tax;
 
   return (
     <>
@@ -40,12 +42,12 @@ export default function Receipt() {
 
           <div className="flex justify-between mb-4">
             <span>Tax (10%)</span>
-            <span>₱{order.total * 0.1}</span>
+            <span>₱{tax}</span>
           </div>
 
           <div className="flex justify-between pt-2 font-bold border-t border-black">
             <span>TOTAL</span>
-            <span>₱{order.total}</span>
+            <span>₱{totalWithTax}</span>
           </div>
 
           <p className="mt-2">Order Date: {order.createdAt}</p>
