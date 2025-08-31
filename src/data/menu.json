@@ -72,6 +72,19 @@
       "tag": "popular",
       "isPopular": false,
       "isRecommended": false
+    },
+    {
+      "id": "coffee-001",
+      "name": "Mocha",
+      "category": "coffee",
+      "description": "Fresh mozzarella, juicy tomatoes, and fragrant basil drizzled with extra virgin olive oil and balsamic glaze.",
+      "price": 130,
+      "image": "/images/mocha.jpg",
+      "homeImage": "/images/mocha.jpg",
+      "available": true,
+      "tag": "popular",
+      "isPopular": false,
+      "isRecommended": false
     }
   ]
 }

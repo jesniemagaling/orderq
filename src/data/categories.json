@@ -1,6 +1,7 @@
 [
   { "id": "all", "name": "All", "icon": "images/all.png" },
   { "id": "burgers", "name": "Burgers", "icon": "images/burger.png" },
+  { "id": "coffee", "name": "Coffee", "icon": "images/coffee.jpg" },
   { "id": "pizza", "name": "Pizza", "icon": "images/pizza.png" },
   { "id": "chicken", "name": "Chicken", "icon": "images/chicken.png" },
   { "id": "salads", "name": "Salads", "icon": "images/salad.jpg" },

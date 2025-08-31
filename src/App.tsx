@@ -22,8 +22,8 @@ function App() {
           <Route path="/cart" element={<Cart />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/payment-method" element={<PaymentMethod />} />
-          <Route path="/order-status" element={<OrderStatus />} />
-          <Route path="/receipt" element={<Receipt />} />
+          <Route path="/order-status/:orderId" element={<OrderStatus />} />
+          <Route path="/receipt/:orderId" element={<Receipt />} />
         </Routes>
       </MainLayout>
     </Router>

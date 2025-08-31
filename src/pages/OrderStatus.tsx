@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import BackButton from '@/components/BackButton';
+import { useParams } from 'react-router-dom';
+import { useCart } from '@/context/CartContext';
 
 const status = [
   { title: 'Order Confirmed', desc: 'Your order has been received' },
@@ -16,6 +17,14 @@ const status = [
 export default function TrackOrder() {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(2);
+  const { orderId } = useParams();
+  const { orders } = useCart();
+
+  const order = orders.find((o) => o.id === orderId);
+
+  if (!order) {
+    return <p className="mt-6 text-center">Order not found.</p>;
+  }
 
   return (
     <div className="space-y-12">
@@ -58,7 +67,10 @@ export default function TrackOrder() {
         </div>
       </div>
       <div className="grid w-full gap-4 place-items-center">
-        <Link to="/receipt" className="flex justify-center w-full">
+        <Link
+          to={`/receipt/${order.id}`}
+          className="flex justify-center w-full"
+        >
           <Button variant="default" className="py-6">
             View Receipt
           </Button>
