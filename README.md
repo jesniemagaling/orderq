@@ -1,69 +1,69 @@
-# React + TypeScript + Vite
+# OrderQ
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+OrderQ is a **QR-based food ordering system** built with **Vite, React, TypeScript, and Tailwind CSS**.  
+It gives restaurants a simple way to offer a digital menu and ordering experience without requiring customers to download an app.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Overview
 
-## Expanding the ESLint configuration
+OrderQ is designed for small and mid-sized restaurants that want a **faster, more convenient dining experience** for their customers.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Instead of waiting for a server to take their order, guests can:
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+1. Scan a QR code at their table
+2. Browse the restaurant’s menu online
+3. Add items to their cart and place an order
+4. Track their order status in real time
+5. View a digital receipt before heading to the cashier
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+This makes the dining process smoother for both staff and customers.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+---
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Key Features
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- Access the menu instantly by scanning a QR code
+- Search and filter menu items with ease
+- Simple cart management (add, remove, update quantities)
+- Digital order summary and receipt
+- Track order status: Pending → Preparing → Served
+- Clean and responsive UI built with Tailwind
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+---
+
+## Tech Stack
+
+- **Vite** – Fast build and development tool
+- **React + TypeScript** – Scalable, type-safe frontend
+- **Tailwind CSS** – Utility-first styling for rapid UI design
+- **React Router** – For smooth client-side navigation
+- **JSON Server** – Lightweight mock API for local development
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js v18 or later
+- npm or yarn
+
+### Installation
+
+```bash
+# Clone this repository
+git clone https://github.com/yourusername/orderq.git
+
+# Go into the project folder
+cd orderq
+
+# Install dependencies
+npm install
+
+# Start the frontend development server
+npm run dev
+
+# In a separate terminal, run the mock API server
+npm run server
 ```
