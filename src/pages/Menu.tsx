@@ -60,7 +60,7 @@ export default function Menu() {
               <MenuCard
                 key={item.id}
                 item={item}
-                onAdd={(menuItem) => addToCart(menuItem)}
+                onAdd={(menuItem) => addToCart(menuItem, 1)}
               />
             ))
           : !loading &&
