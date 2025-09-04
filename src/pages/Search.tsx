@@ -7,24 +7,24 @@ import MenuCard from '@/components/MenuCard';
 import { useCart } from '@/context/CartContext';
 
 export default function Search() {
-  const [query1, setQuery1] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const { addToCart } = useCart();
   const items = menuData.menus as MenuItem[];
 
   const filteredItems = items.filter((item) =>
-    item.name.toLowerCase().includes(query1.toLowerCase())
+    item.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const displayItems =
-    query1.trim() === '' ? filteredItems.slice(0, 3) : filteredItems;
+    searchTerm.trim() === '' ? filteredItems.slice(0, 3) : filteredItems;
 
   return (
     <>
       <Nav title="Search" />
 
       <SearchInput
-        value={query1}
-        onChange={setQuery1}
+        value={searchTerm}
+        onChange={setSearchTerm}
         placeholder="What do you need?"
       />
 
