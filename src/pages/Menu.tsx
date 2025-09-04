@@ -15,20 +15,20 @@ export default function Menu() {
   const searchParams = new URLSearchParams(location.search);
   const searchQuery = searchParams.get('search') || '';
 
-  const [query1, setQuery1] = useState(searchQuery);
+  const [searchTerm, setSearchTerm] = useState(searchQuery);
   const [activeCategory, setActiveCategory] = useState<string>('all');
 
   const { menuItems, loading, error } = useMenu();
   const { addToCart } = useCart();
 
   useEffect(() => {
-    setQuery1(searchQuery);
+    setSearchTerm(searchQuery);
   }, [searchQuery]);
 
   const filteredItems = menuItems.filter((item: MenuItem) => {
     const matchesSearch = item.name
       .toLowerCase()
-      .includes(query1.toLowerCase());
+      .includes(searchTerm.toLowerCase());
     const matchesCategory =
       activeCategory === 'all' || item.category === activeCategory;
     return matchesSearch && matchesCategory;
@@ -38,8 +38,8 @@ export default function Menu() {
     <>
       <Nav title="Menu" />
       <SearchInput
-        value={query1}
-        onChange={setQuery1}
+        value={searchTerm}
+        onChange={setSearchTerm}
         placeholder="What do you need?"
       />
 

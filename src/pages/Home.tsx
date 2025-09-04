@@ -8,15 +8,15 @@ import { useMenu } from '@/hooks/useMenu';
 import { useNavigate } from 'react-router-dom';
 
 export default function Home() {
-  const [query1, setQuery1] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const { menuItems, loading, error } = useMenu();
   const navigate = useNavigate();
 
   const popularMenu = menuItems.filter((item) => item.isPopular);
   const recommendedMenu = menuItems.filter((item) => item.isRecommended);
   const handleSearch = () => {
-    if (query1.trim()) {
-      navigate(`/Menu?search=${encodeURIComponent(query1.trim())}`);
+    if (searchTerm.trim()) {
+      navigate(`/Menu?search=${encodeURIComponent(searchTerm.trim())}`);
     }
   };
 
@@ -28,8 +28,8 @@ export default function Home() {
           START YOUR ORDER
         </div>
         <SearchInput
-          value={query1}
-          onChange={setQuery1}
+          value={searchTerm}
+          onChange={setSearchTerm}
           placeholder="What do you need?"
           onEnter={handleSearch}
         />

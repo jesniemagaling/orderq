@@ -35,7 +35,7 @@ export default function TrackOrder() {
         <div className="flex flex-col">
           {status.map((step, index) => (
             <div key={index} className="flex items-start gap-3">
-              {/* Step Circle and Line */}
+              {/* Status Circle and Line */}
               <div className="flex flex-col items-center">
                 {/* Outer Circle */}
                 <div className="flex items-center justify-center w-8 h-8 border-2 border-gray-500 rounded-full">
@@ -55,7 +55,7 @@ export default function TrackOrder() {
                 )}
               </div>
 
-              {/* Step Text */}
+              {/* Status Text */}
               <div className="space-y-2">
                 <p className="font-normal heading-3">{step.title}</p>
                 <p className="font-normal text-gray-600 heading-4">
