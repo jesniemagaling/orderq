@@ -12,7 +12,7 @@ export default function HomeMenuCard({ item }: HomeMenuCardProps) {
   const { addToCart } = useCart();
 
   const handleAddToCart = () => {
-    addToCart(item);
+    addToCart(item, 1);
     toast.success(`${item.name} added to cart!`);
   };
 
