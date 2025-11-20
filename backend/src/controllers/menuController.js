@@ -1,7 +1,21 @@
 import { db } from '../config/db.js';
 import { notifyMenuUpdate } from '../../index.js';
+import fs from 'fs';
+import path from 'path';
 
-// Fetch all menu items
+// Helper to delete old image file
+const deleteOldImage = (imagePath) => {
+  if (!imagePath) return;
+
+  const filePath = path.join(process.cwd(), imagePath);
+  if (fs.existsSync(filePath)) {
+    fs.unlink(filePath, (err) => {
+      if (err) console.error('Failed to delete old image:', err);
+    });
+  }
+};
+
+// GET ALL MENU ITEMS
 export const getMenu = async (req, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM menu ORDER BY id DESC');
@@ -12,15 +26,13 @@ export const getMenu = async (req, res) => {
   }
 };
 
-// Fetch single menu item by ID
+// GET SINGLE MENU ITEM
 export const getMenuById = async (req, res) => {
   const { id } = req.params;
-
   try {
     const [rows] = await db.query('SELECT * FROM menu WHERE id = ?', [id]);
-    if (rows.length === 0) {
+    if (rows.length === 0)
       return res.status(404).json({ message: 'Menu item not found' });
-    }
 
     res.status(200).json(rows[0]);
   } catch (error) {
@@ -29,6 +41,7 @@ export const getMenuById = async (req, res) => {
   }
 };
 
+// GET MENU CATEGORIES
 export const getMenuCategories = async (req, res) => {
   try {
     const [rows] = await db.query(`
@@ -56,24 +69,25 @@ export const getMenuCategories = async (req, res) => {
   }
 };
 
-// Add new menu item
+// ADD NEW MENU ITEM
 export const addMenuItem = async (req, res) => {
   try {
-    let { name, description, price, category, stocks, status, image_url } =
-      req.body;
+    let { name, description, price, category, stocks } = req.body;
+    const file = req.file;
 
-    if (!name || !price) {
+    if (!name || !price)
       return res.status(400).json({ message: 'Name and price are required' });
-    }
 
     price = Number(price);
     stocks = Number(stocks);
 
-    if (isNaN(price) || isNaN(stocks)) {
+    if (isNaN(price) || isNaN(stocks))
       return res
         .status(400)
         .json({ message: 'Price and stocks must be numeric' });
-    }
+
+    const image_url = file ? `/uploads/menu/${file.filename}` : null;
+    const status = stocks > 0 ? 'in_stock' : 'out_of_stock';
 
     await db.query(
       `INSERT INTO menu (name, description, price, category, stocks, status, image_url)
@@ -85,7 +99,7 @@ export const addMenuItem = async (req, res) => {
         category || 'Uncategorized',
         stocks,
         status,
-        image_url || null,
+        image_url,
       ]
     );
 
@@ -101,37 +115,40 @@ export const addMenuItem = async (req, res) => {
   }
 };
 
-// Update existing menu item
+// UPDATE MENU ITEM
 export const updateMenuItem = async (req, res) => {
   const { id } = req.params;
-  let { name, description, price, category, stocks, status, image_url } =
-    req.body;
+  let { name, description, price, category, stocks } = req.body;
+  const file = req.file; // uploaded image file
 
   try {
-    // Validation
-    if (!name || !price) {
+    if (!name || !price)
       return res.status(400).json({ message: 'Name and price are required' });
-    }
 
     price = Number(price);
     stocks = Number(stocks);
 
-    if (isNaN(price) || isNaN(stocks)) {
+    if (isNaN(price) || isNaN(stocks))
       return res
         .status(400)
         .json({ message: 'Price and stocks must be numeric' });
+
+    const [existing] = await db.query('SELECT * FROM menu WHERE id = ?', [id]);
+    if (existing.length === 0)
+      return res.status(404).json({ message: 'Menu item not found' });
+
+    const oldImage = existing[0].image_url;
+    let image_url = oldImage;
+
+    if (file) {
+      image_url = `/uploads/menu/${file.filename}`;
+      deleteOldImage(oldImage);
     }
 
-    // Check if item exists
-    const [existing] = await db.query('SELECT * FROM menu WHERE id = ?', [id]);
-    if (existing.length === 0) {
-      return res.status(404).json({ message: 'Menu item not found' });
-    }
+    const status = stocks > 0 ? 'in_stock' : 'out_of_stock';
 
     await db.query(
-      `UPDATE menu
-        SET name = ?, description = ?, price = ?, category = ?, stocks = ?, status = ?, image_url = ?
-        WHERE id = ?`,
+      `UPDATE menu SET name=?, description=?, price=?, category=?, stocks=?, status=?, image_url=? WHERE id=?`,
       [
         name.trim(),
         description || '',
@@ -139,7 +156,7 @@ export const updateMenuItem = async (req, res) => {
         category || 'Uncategorized',
         stocks,
         status,
-        image_url || null,
+        image_url,
         id,
       ]
     );
@@ -165,15 +182,20 @@ export const updateMenuItem = async (req, res) => {
   }
 };
 
-// Delete menu item (optional, for admin UI)
+// DELETE MENU ITEM
 export const deleteMenuItem = async (req, res) => {
   const { id } = req.params;
   try {
-    const [result] = await db.query('DELETE FROM menu WHERE id = ?', [id]);
-    if (result.affectedRows === 0) {
+    const [rows] = await db.query('SELECT * FROM menu WHERE id = ?', [id]);
+    if (rows.length === 0)
       return res.status(404).json({ message: 'Menu item not found' });
-    }
+
+    deleteOldImage(rows[0].image_url);
+
+    await db.query('DELETE FROM menu WHERE id = ?', [id]);
+
     res.status(200).json({ message: 'Menu item deleted successfully!' });
+
     notifyMenuUpdate({
       type: 'delete',
       item: { id },
@@ -184,7 +206,7 @@ export const deleteMenuItem = async (req, res) => {
   }
 };
 
-// Get top-selling menu items (by total quantity sold)
+// GET TOP-SELLING MENU ITEMS
 export const getTopSellingItems = async (req, res) => {
   try {
     const [rows] = await db.query(`
@@ -195,7 +217,7 @@ export const getTopSellingItems = async (req, res) => {
       FROM order_items oi
       JOIN menu m ON oi.menu_id = m.id
       JOIN orders o ON oi.order_id = o.id
-      WHERE o.status IN ('served', 'completed')  -- count only completed orders
+      WHERE o.status IN ('served', 'completed')
       GROUP BY m.id
       ORDER BY total_sold DESC
       LIMIT 5

@@ -60,6 +60,17 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/tables', tableRoutes);
 
+// SERVE UPLOADED MENU IMAGES
+app.use(
+  '/uploads',
+  express.static(path.join(process.cwd(), 'uploads'), {
+    setHeaders: (res) => {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    },
+  })
+);
+
 // SERVE QR CODES SAFELY
 app.use(
   '/qrcodes',

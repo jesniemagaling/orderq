@@ -8,22 +8,24 @@ import {
   deleteMenuItem,
   getTopSellingItems,
 } from '../controllers/menuController.js';
-import { verifyToken, verifyRole } from '../middleware/authMiddleware.js';
+import { verifyToken, verifyRole } from '../middlewares/authMiddleware.js';
 import { body, validationResult } from 'express-validator';
+import upload from '../middlewares/uploadMenuImage.js';
 
 const router = express.Router();
 
+// GET ROUTES
 router.get('/', getMenu);
 router.get('/top-selling', getTopSellingItems);
 router.get('/categories', getMenuCategories);
 router.get('/:id', getMenuById);
 
+// ADD MENU ITEM
 router.post(
   '/',
-  // verifyToken,
-  // verifyRole(['admin']), // Uncomment to protect
+  upload.single('image'),
   [body('name').notEmpty(), body('price').isFloat({ gt: 0 })],
-  async (req, res) => {
+  (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
@@ -32,12 +34,12 @@ router.post(
   }
 );
 
+// UPDATE MENU ITEM
 router.put(
   '/:id',
-  // verifyToken,
-  // verifyRole(['admin']), // Uncomment to protect
+  upload.single('image'),
   [body('name').notEmpty(), body('price').isFloat({ gt: 0 })],
-  async (req, res) => {
+  (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
@@ -46,13 +48,9 @@ router.put(
   }
 );
 
-router.delete(
-  '/:id',
-  // verifyToken,
-  // verifyRole(['admin']), // Uncomment to protect
-  async (req, res) => {
-    deleteMenuItem(req, res);
-  }
-);
+// DELETE MENU ITEM
+router.delete('/:id', (req, res) => {
+  deleteMenuItem(req, res);
+});
 
 export default router;
