@@ -29,7 +29,7 @@ export const createSession = async (req, res) => {
 
     const [activeSession] = await connection.query(
       `SELECT * FROM sessions 
-       WHERE table_id = ? AND is_active = 1 AND expires_at > NOW() LIMIT 1`,
+        WHERE table_id = ? AND is_active = 1 AND expires_at > NOW() LIMIT 1`,
       [table.id]
     );
 
@@ -56,7 +56,7 @@ export const createSession = async (req, res) => {
 
     await connection.query(
       `INSERT INTO sessions (table_id, token, created_at, expires_at, is_active)
-       VALUES (?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 2 HOUR), 1)`,
+        VALUES (?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 2 HOUR), 1)`,
       [table.id, token]
     );
 
@@ -101,10 +101,10 @@ export const verifySession = async (req, res) => {
   try {
     const [rows] = await db.query(
       `SELECT s.*, t.table_number, t.status
-       FROM sessions s
-       JOIN tables t ON s.table_id = t.id
-       WHERE s.token = ? AND s.is_active = 1 AND s.expires_at > NOW()
-       LIMIT 1`,
+        FROM sessions s
+        JOIN tables t ON s.table_id = t.id
+        WHERE s.token = ? AND s.is_active = 1 AND s.expires_at > NOW()
+        LIMIT 1`,
       [token]
     );
 
@@ -134,10 +134,10 @@ export const endSession = async (req, res) => {
 
     const [sessions] = await connection.query(
       `SELECT s.id, s.table_id, t.status 
-       FROM sessions s
-       JOIN tables t ON s.table_id = t.id
-       WHERE s.token = ? AND s.is_active = 1
-       LIMIT 1`,
+        FROM sessions s
+        JOIN tables t ON s.table_id = t.id
+        WHERE s.token = ? AND s.is_active = 1
+        LIMIT 1`,
       [token]
     );
 
@@ -150,15 +150,15 @@ export const endSession = async (req, res) => {
 
     await connection.query(
       `UPDATE sessions 
-       SET is_active = 0, expires_at = NOW()
-       WHERE id = ?`,
+        SET is_active = 0, expires_at = NOW()
+        WHERE id = ?`,
       [session.id]
     );
 
     await connection.query(
       `UPDATE tables 
-       SET status = 'available'
-       WHERE id = ?`,
+        SET status = 'available'
+        WHERE id = ?`,
       [session.table_id]
     );
 

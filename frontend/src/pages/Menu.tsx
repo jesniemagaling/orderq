@@ -62,7 +62,7 @@ export default function Menu() {
   return (
     <>
       <Nav
-        title={table ? `Table ${table}` : 'Menu'}
+        title={'Menu'}
         backLink={`/menu?table=${table}${
           sessionToken ? `&token=${sessionToken}` : ''
         }`}

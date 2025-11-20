@@ -1,13 +1,17 @@
 import CartItem from '@/components/CartItem';
 import Nav from '@/components/Nav';
 import { Button } from '@/components/ui/button';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { toast } from 'react-toastify';
 import { MenuItem } from '@/types/menu';
 import { Separator } from '@/components/ui/separator';
 
 export default function Cart() {
+  const [searchParams] = useSearchParams();
+  const table = searchParams.get('table');
+  const sessionToken = searchParams.get('token');
   const {
     cart,
     removeFromCart,
@@ -48,7 +52,6 @@ export default function Cart() {
                 onClick={() => navigate(`/menu/${item.id}`)}
               >
                 <CartItem
-                  key={item.id}
                   item={item}
                   quantity={item.quantity}
                   onIncrease={() => handleIncrease(item)}
@@ -60,17 +63,30 @@ export default function Cart() {
 
             <Separator />
 
-            <div className="flex items-center justify-between m-6 ">
+            <div className="flex items-center justify-between m-6">
               <p className="text-lg font-medium">Total:</p>
               <p className="text-xl font-bold text-yellow-500">
-                ₱ {totalPrice.toLocaleString()}
+                ₱ {totalPrice.toFixed(2)}
               </p>
             </div>
-            <Link to="/payment-method" className="flex justify-center w-full">
-              <Button variant="default" className="py-6">
+
+            <div className="flex justify-center w-full">
+              <Button
+                variant="default"
+                className="w-full py-6"
+                onClick={() => {
+                  if (cart.length === 0) {
+                    toast.error('Cart is empty!');
+                  } else {
+                    navigate(
+                      `/payment-method?table=${table}&token=${sessionToken}`
+                    );
+                  }
+                }}
+              >
                 Proceed to Pay
               </Button>
-            </Link>
+            </div>
           </>
         )}
       </div>

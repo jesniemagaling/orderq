@@ -33,7 +33,7 @@ export default function Search() {
           displayItems.map((item) => (
             <MenuCard
               key={item.id}
-              item={item}
+              item={item} // <-- REQUIRED prop
               onAdd={(menuItem) => addToCart(menuItem, 1)}
             />
           ))
