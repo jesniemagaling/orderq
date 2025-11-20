@@ -1,0 +1,16 @@
+[
+  {
+    "id": "promo-001",
+    "title": "Today's Offer",
+    "highlight": "Free box of Fries",
+    "subtitle": "on all orders above ₱229",
+    "image": "/images/fries.png"
+  },
+  {
+    "id": "promo-002",
+    "title": "Limited Deal",
+    "highlight": "Free Slice of Pizza",
+    "subtitle": "on all orders above ₱129",
+    "image": "/images/pizza.jpg"
+  }
+]

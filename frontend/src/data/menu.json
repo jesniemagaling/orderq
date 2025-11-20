@@ -1,0 +1,142 @@
+{
+  "menus": [
+    {
+      "id": "coffee-001",
+      "name": "Americano",
+      "category": "iced",
+      "description": "A bold and smooth espresso diluted with hot water, giving a rich coffee flavor with a lighter body.",
+      "price": 150,
+      "image": "/images/americano.png",
+      "homeImage": "/images/americano-home.png",
+      "available": true,
+      "isPopular": true,
+      "isRecommended": true
+    },
+    {
+      "id": "drink-001",
+      "name": "Blueberry",
+      "category": "fruity",
+      "description": "A refreshing blueberry-flavored drink that blends sweetness and tang for a delightful fruity taste.",
+      "price": 280,
+      "image": "/images/blueberry.png",
+      "homeImage": "/images/blueberry-home.png",
+      "available": true,
+      "isPopular": true,
+      "isRecommended": true
+    },
+    {
+      "id": "coffee-002",
+      "name": "Caramel Macchiato",
+      "category": "iced",
+      "description": "Espresso combined with milk, vanilla flavor, and caramel drizzle for a sweet, smooth coffee treat.",
+      "price": 180,
+      "image": "/images/caramel-macchiato.png",
+      "homeImage": "/images/caramel-macchiato-home.png",
+      "available": true,
+      "isPopular": false,
+      "isRecommended": false
+    },
+    {
+      "id": "drink-002",
+      "name": "Four Seasons",
+      "category": "fruity",
+      "description": "A vibrant fruity drink combining flavors of orange, pineapple, mango, and guava for a tropical refreshment.",
+      "price": 120,
+      "image": "/images/four-seasons.png",
+      "homeImage": "/images/four-seasons.png",
+      "available": true,
+      "isPopular": false,
+      "isRecommended": false
+    },
+    {
+      "id": "drink-003",
+      "name": "Green Apple",
+      "category": "fruity",
+      "description": "A crisp and tangy green apple drink that delivers a refreshing burst of fruity flavor.",
+      "price": 140,
+      "image": "/images/green-apple.png",
+      "homeImage": "/images/green-apple.png",
+      "available": true,
+      "isPopular": false,
+      "isRecommended": false
+    },
+    {
+      "id": "coffee-003",
+      "name": "Hazelnut Latte",
+      "category": "iced",
+      "description": "A smooth espresso latte infused with the nutty sweetness of hazelnut syrup for a rich, creamy flavor.",
+      "price": 160,
+      "image": "/images/hazelnut-latte.png",
+      "homeImage": "/images/hazelnut-latte.png",
+      "available": true,
+      "tag": "popular",
+      "isPopular": false,
+      "isRecommended": false
+    },
+    {
+      "id": "drink-004",
+      "name": "Lychee",
+      "category": "fruity",
+      "description": "A sweet and aromatic lychee drink offering a tropical and refreshing fruity taste.",
+      "price": 130,
+      "image": "/images/lychee.png",
+      "homeImage": "/images/lychee.png",
+      "available": true,
+      "tag": "popular",
+      "isPopular": false,
+      "isRecommended": false
+    },
+    {
+      "id": "coffee-004",
+      "name": "Macchiato",
+      "category": "iced",
+      "description": "A strong shot of espresso topped with a small amount of frothy milk, balancing boldness and creaminess.",
+      "price": 130,
+      "image": "/images/macchiato.png",
+      "homeImage": "/images/macchiato.png",
+      "available": true,
+      "tag": "popular",
+      "isPopular": false,
+      "isRecommended": false
+    },
+    {
+      "id": "coffee-005",
+      "name": "Spanish Latte",
+      "category": "iced",
+      "description": "A creamy espresso-based drink sweetened with condensed milk, offering a rich and smooth flavor.",
+      "price": 130,
+      "image": "/images/spanish-latte.png",
+      "homeImage": "/images/lychee.png",
+      "available": true,
+      "tag": "popular",
+      "isPopular": false,
+      "isRecommended": false
+    },
+    {
+      "id": "drink-005",
+      "name": "Strawberry",
+      "category": "fruity",
+      "description": "A sweet and refreshing strawberry drink made with real fruit flavor and a fruity aroma.",
+      "price": 130,
+      "image": "/images/strawberry.png",
+      "homeImage": "/images/strawberry.png",
+      "available": true,
+      "tag": "popular",
+      "isPopular": false,
+      "isRecommended": false
+    },
+    {
+      "id": "coffee-006",
+      "name": "Vanilla Latte",
+      "category": "iced",
+      "description": "A smooth espresso latte flavored with vanilla syrup, creating a creamy and sweet coffee experience.",
+      "price": 130,
+      "image": "/images/vanilla-latte.png",
+      "homeImage": "/images/vanilla-latte.png",
+      "available": true,
+      "tag": "popular",
+      "isPopular": false,
+      "isRecommended": false
+    }
+  ]
+}

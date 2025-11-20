@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  orderq-admin:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: orderq-admin
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+    command: npm run dev

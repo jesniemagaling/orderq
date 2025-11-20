@@ -1,0 +1,15 @@
+frontend:
+  build:
+    context: ./frontend
+    dockerfile: Dockerfile
+  container_name: orderq-frontend
+  ports:
+    - '5174:5174'
+  volumes:
+    - ./frontend:/app
+    - /app/node_modules
+  environment:
+    - CHOKIDAR_USEPOLLING=true
+    - WATCHPACK_POLLING=true
+  depends_on:
+    - backend

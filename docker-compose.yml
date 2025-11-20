@@ -1,0 +1,102 @@
+version: '3.9'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: orderq-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - '3307:3306'
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/orderq_schema.sql:/docker-entrypoint-initdb.d/orderq_schema.sql
+    networks:
+      - orderq-network
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: orderq-phpmyadmin
+    restart: always
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: root
+      PMA_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    ports:
+      - '8080:80'
+    depends_on:
+      - mysql
+    networks:
+      - orderq-network
+
+  backend:
+    build:
+      context: ./backend
+    container_name: orderq-backend
+    restart: always
+    ports:
+      - '5000:5000'
+    volumes:
+      - ./backend:/usr/src/app
+      - /usr/src/app/node_modules
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      DB_NAME: ${MYSQL_DATABASE}
+      FRONTEND_URL_1: http://localhost:5173
+      FRONTEND_URL_2: http://192.168.10.1:5174
+      NODE_ENV: development
+    depends_on:
+      - mysql
+    command: ['npx', 'nodemon', '--legacy-watch', 'index.js']
+    networks:
+      - orderq-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: orderq-frontend
+    ports:
+      - '5174:5173'
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+    depends_on:
+      - backend
+    command: ['npm', 'run', 'dev']
+    networks:
+      - orderq-network
+
+  orderq-admin:
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+    container_name: orderq-admin
+    ports:
+      - '5173:5173'
+    volumes:
+      - ./admin:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+    command: ['npm', 'run', 'dev']
+    networks:
+      - orderq-network
+
+volumes:
+  mysql_data:
+
+networks:
+  orderq-network:
+    driver: bridge

@@ -1,0 +1,7 @@
+[
+  { "id": "all", "name": "All", "icon": "/images/all.png" },
+  { "id": "iced", "name": "Iced", "icon": "/images/iced.png" },
+  { "id": "hot", "name": "Hot", "icon": "/images/hot.png" },
+  { "id": "fruity", "name": "Fruity", "icon": "/images/fruity.png" },
+  { "id": "pastry", "name": "Pastries", "icon": "/images/pastry.png" }
+]

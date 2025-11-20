@@ -1,0 +1,548 @@
+import { useEffect, useState } from 'react';
+import { io, Socket } from 'socket.io-client';
+import api from '../lib/axios';
+import Button from '../components/ui/Button';
+import Modal from '../components/ui/Modal';
+import { debounce } from 'lodash';
+import QRCode from 'qrcode';
+
+const socket: Socket = io('http://localhost:5000', {
+  transports: ['websocket'], // ensures stable connection
+  reconnectionAttempts: 5,
+  reconnectionDelay: 2000,
+});
+
+interface OrderItem {
+  name: string;
+  quantity: number;
+  price: number;
+}
+
+interface Order {
+  id: number;
+  total_amount: number;
+  status: string;
+  payment_status: string;
+  payment_method: string;
+  created_at: string;
+  items: OrderItem[];
+  is_additional?: boolean;
+}
+
+interface Table {
+  id: number;
+  table_number: string;
+  status: 'available' | 'occupied' | 'in_progress' | 'served';
+  has_additional_order?: boolean;
+  sessionToken?: string;
+}
+
+interface TableDetailsResponse {
+  table: Table;
+  session: { id: number; token: string } | null;
+  orders: Order[];
+  has_additional_order: boolean;
+}
+
+export default function Tables() {
+  const [tables, setTables] = useState<Table[]>([]);
+  const [allQR, setAllQR] = useState<any[]>([]);
+  const [selectedTable, setSelectedTable] = useState<Table | null>(null);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingTable, setLoadingTable] = useState<number | null>(null);
+  const [printOrder, setPrintOrder] = useState<Order | null>(null);
+  const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [qrPreview, setQrPreview] = useState<string | null>(null);
+  const [qrTableNumber, setQrTableNumber] = useState<string | null>(null);
+
+  const debouncedFetchTableOrders = debounce((tableId: number) => {
+    fetchTableOrders(tableId);
+  }, 1000);
+
+  // Fetch all tables from API
+  const fetchTables = async () => {
+    try {
+      const res = await api.get<Table[]>('/tables');
+      const sorted = res.data.sort(
+        (a, b) => Number(a.table_number) - Number(b.table_number)
+      );
+      setTables(sorted);
+    } catch (err) {
+      console.error('Failed to load tables', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchAllQR = async () => {
+    try {
+      const res = await api.get('/tables/qr/all');
+      setAllQR(res.data);
+    } catch (err) {
+      console.error('Failed to fetch QR list', err);
+    }
+  };
+
+  // Establish socket and handle incoming updates
+  useEffect(() => {
+    fetchTables();
+    fetchAllQR();
+
+    socket.on('connect', () => {
+      console.log('Connected to WebSocket server');
+    });
+
+    socket.on('disconnect', () => {
+      console.warn('Disconnected from WebSocket server');
+    });
+
+    socket.on('newOrder', (data: { tableId: number }) => {
+      console.warn('Received new order for table:', data.tableId);
+
+      setTables((prev) =>
+        prev.map((t) =>
+          t.id === data.tableId ? { ...t, has_additional_order: true } : t
+        )
+      );
+
+      // Optionally refresh if the same table is open
+      setSelectedTable((prev) => {
+        if (prev && prev.id === data.tableId) {
+          debouncedFetchTableOrders(data.tableId);
+        }
+        return prev;
+      });
+    });
+
+    socket.on('tableStatusUpdate', ({ tableId, status }) => {
+      console.log('Table status updated:', tableId, status);
+
+      setTables((prev) =>
+        prev.map((t) => (t.id === tableId ? { ...t, status } : t))
+      );
+
+      setSelectedTable((prev) =>
+        prev && prev.id === tableId ? { ...prev, status } : prev
+      );
+    });
+
+    return () => {
+      socket.off('newOrder');
+      socket.off('tableStatusUpdate');
+      socket.off('connect');
+      socket.off('disconnect');
+    };
+  }, []);
+
+  // Fetch specific table’s orders
+  const fetchTableOrders = async (tableId: number) => {
+    if (loadingTable === tableId) return;
+    setLoadingTable(tableId);
+
+    try {
+      const res = await api.get<TableDetailsResponse>(
+        `/tables/${tableId}/details`
+      );
+      const data = res.data;
+
+      setOrders(data.orders);
+      setTables((prev) =>
+        prev.map((t) =>
+          t.id === tableId
+            ? {
+                ...t,
+                has_additional_order: false,
+                sessionToken: data.session?.token,
+              }
+            : t
+        )
+      );
+
+      setSelectedTable((prev) =>
+        prev && prev.id === tableId
+          ? {
+              ...prev,
+              sessionToken: data.session?.token,
+              has_additional_order: false,
+            }
+          : prev
+      );
+    } catch (err) {
+      console.error('Failed to load table orders', err);
+    } finally {
+      setLoadingTable(null);
+    }
+  };
+
+  const handleTableClick = (table: Table) => {
+    setSelectedTable(table);
+    fetchTableOrders(table.id);
+  };
+
+  const handlePrintInvoice = (order: Order) => {
+    setPrintOrder(order);
+  };
+
+  const handleConfirmPrint = async () => {
+    if (printOrder) {
+      try {
+        window.print();
+        await api.post(`/orders/${printOrder.id}/confirm`);
+
+        setOrders((prev) =>
+          prev.map((order) =>
+            order.id === printOrder.id
+              ? { ...order, status: 'unserved' }
+              : order
+          )
+        );
+
+        if (selectedTable) {
+          setTables((prev) =>
+            prev.map((t) =>
+              t.id === selectedTable.id ? { ...t, status: 'in_progress' } : t
+            )
+          );
+        }
+
+        setPrintOrder(null);
+        console.log(`Order #${printOrder.id} confirmed and updated`);
+      } catch (error) {
+        console.error('Failed to confirm order:', error);
+      }
+    }
+  };
+
+  const handleEndSession = async (tableId: number) => {
+    const table = tables.find((t) => t.id === tableId);
+
+    if (!table?.sessionToken) {
+      console.error('No active session token for this table');
+      return;
+    }
+
+    try {
+      await api.post(`/sessions/end/${table.sessionToken}`);
+
+      setSelectedTable(null);
+      setOrders([]);
+
+      setTables((prev) =>
+        prev.map((t) =>
+          t.id === tableId
+            ? {
+                ...t,
+                status: 'available',
+                has_additional_order: false,
+                sessionToken: undefined,
+              }
+            : t
+        )
+      );
+
+      console.log(`Session for table ${tableId} ended`);
+    } catch (err) {
+      console.error('Failed to end session', err);
+    }
+  };
+
+  const handleShowQR = async (table: Table) => {
+    try {
+      const qrData = allQR.find((x) => x.id === table.id);
+
+      if (!qrData?.qr_image_url) {
+        alert('No QR found for this table.');
+        return;
+      }
+
+      setQrPreview(qrData.qr_image_url);
+      setQrTableNumber(table.table_number);
+      setQrModalOpen(true);
+    } catch (err) {
+      console.error('Failed to show QR code', err);
+      alert('Failed to load QR code.');
+    }
+  };
+
+  const handleDownloadQRCode = async (table: Table) => {
+    try {
+      const qrData = allQR.find((x) => x.id === table.id);
+
+      if (!qrData?.qr_image_url) {
+        alert('No QR found for this table.');
+        return;
+      }
+
+      const response = await fetch(qrData.qr_image_url);
+      const blob = await response.blob();
+
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `Table-${table.table_number}-QR.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('QR download failed:', err);
+      alert('Failed to download QR code.');
+    }
+  };
+
+  if (loading) return <p>Loading tables...</p>;
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'available':
+        return 'text-green-500';
+      case 'occupied':
+        return 'text-red-600';
+      case 'in_progress':
+        return 'text-yellow-500';
+      case 'served':
+        return 'text-blue-400';
+      default:
+        return 'text-gray-500';
+    }
+  };
+
+  return (
+    <div className="flex gap-10">
+      <div className="w-1/2">
+        <h1 className="mb-6 text-3xl font-bold">All Tables</h1>
+
+        {tables.length === 0 ? (
+          <p className="text-gray-500">No tables found.</p>
+        ) : (
+          <div className="space-y-4">
+            {tables.map((table) => (
+              <div
+                key={table.id}
+                onClick={() => handleTableClick(table)}
+                className={`relative cursor-pointer flex justify-between rounded-xl p-4 shadow transition ${
+                  selectedTable?.id === table.id
+                    ? 'bg-primary text-white'
+                    : 'bg-white hover:bg-gray-50'
+                }`}
+              >
+                <div>
+                  <p className="text-lg font-medium">
+                    Table #{table.table_number}
+                  </p>
+                </div>
+
+                <div className="text-right">
+                  <p
+                    className={`text-sm font-medium ${
+                      selectedTable?.id === table.id
+                        ? 'text-white'
+                        : getStatusColor(table.status)
+                    }`}
+                  >
+                    {table.status
+                      .replace('_', ' ')
+                      .replace(/\b\w/g, (l) => l.toUpperCase())}
+                  </p>
+                </div>
+
+                {/*notification*/}
+                {table.has_additional_order && (
+                  <span className="absolute w-3 h-3 bg-red-600 rounded-full top-1 right-1 animate-pulse" />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="flex-1 px-2 py-4">
+        {selectedTable ? (
+          <>
+            <div className="flex items-center gap-2 mb-6 text-lg font-medium">
+              <span className="px-2">Table#: {selectedTable.table_number}</span>
+              <Button onClick={() => handleShowQR(selectedTable)}>
+                View QR
+              </Button>
+              {selectedTable.sessionToken && (
+                <Button onClick={() => handleEndSession(selectedTable.id)}>
+                  End Session
+                </Button>
+              )}
+            </div>
+
+            {orders.length > 0 ? (
+              <div className="max-h-[740px] overflow-y-auto">
+                {orders.map((order, orderIdx) => (
+                  <div key={order.id} className="px-4 mb-8 border-b">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-xl font-semibold">
+                        {orderIdx === 0
+                          ? 'Main Order'
+                          : `Additional Order #${orderIdx}`}
+                        <span className="ml-2 text-sm text-gray-500">
+                          (
+                          {new Date(order.created_at).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                          )
+                        </span>
+                      </h3>
+                      {order.status === 'pending' && (
+                        <Button
+                          className="bg-primary"
+                          onClick={() => handlePrintInvoice(order)}
+                        >
+                          Print Invoice
+                        </Button>
+                      )}
+                    </div>
+
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="py-2 font-medium text-gray-600 text-left w-[60%]">
+                            Product
+                          </th>
+                          <th className="py-2 font-medium text-gray-600 text-center w-[20%]">
+                            Qty
+                          </th>
+                          <th className="py-2 font-medium text-gray-600 text-right w-[20%]">
+                            Price
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {order.items.map((item, idx) => (
+                          <tr key={idx} className="border-b">
+                            <td className="py-1 w-[60%]">{item.name}</td>
+                            <td className="py-1 text-center w-[20%]">
+                              {item.quantity}
+                            </td>
+                            <td className="py-1 text-right w-[20%]">
+                              ₱{(item.price * item.quantity).toLocaleString()}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-10 text-center text-gray-500">
+                No orders for this table.
+              </p>
+            )}
+          </>
+        ) : (
+          <p className="mt-10 text-center text-gray-500">
+            Select a table to view details
+          </p>
+        )}
+      </div>
+
+      {/* PRINT ORDER */}
+      <Modal isOpen={!!printOrder} onClose={() => setPrintOrder(null)}>
+        {printOrder && (
+          <>
+            <h2 className="mb-3 text-lg font-semibold">
+              {printOrder.is_additional
+                ? `Additional Order #${orders.findIndex(
+                    (o) => o.id === printOrder.id
+                  )}`
+                : 'Main Order'}
+            </h2>
+            <p className="mb-2 text-sm text-gray-600">
+              Date:{' '}
+              {new Date(printOrder.created_at).toLocaleString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+                month: 'short',
+                day: '2-digit',
+              })}
+            </p>
+
+            <table className="w-full mb-3 text-sm">
+              <tbody>
+                {printOrder.items.map((item, i) => (
+                  <tr key={i} className="border-b">
+                    <td className="py-1">{item.name}</td>
+                    <td className="py-1 text-center">{item.quantity}x</td>
+                    <td className="py-1 text-right">
+                      ₱{(item.price * item.quantity).toLocaleString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <div className="mb-6 space-y-1 text-sm">
+              <p>
+                Subtotal: ₱
+                {Number(printOrder.total_amount || 0).toLocaleString(
+                  undefined,
+                  {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  }
+                )}
+              </p>
+              <p>
+                Tax: ₱
+                {(Number(printOrder.total_amount || 0) * 0.015).toFixed(2)}
+              </p>
+              <p className="font-medium">
+                Total: ₱
+                {(
+                  Number(printOrder.total_amount || 0) +
+                  Number(printOrder.total_amount || 0) * 0.015
+                ).toFixed(2)}
+              </p>
+            </div>
+
+            <Button className="w-full bg-primary" onClick={handleConfirmPrint}>
+              Confirm
+            </Button>
+          </>
+        )}
+      </Modal>
+
+      {/* QR Modal */}
+      <Modal isOpen={qrModalOpen} onClose={() => setQrModalOpen(false)}>
+        <div className="text-center">
+          <h2 className="mb-4 text-xl font-semibold">
+            Table #{qrTableNumber} QR Code
+          </h2>
+
+          {qrPreview ? (
+            <img
+              src={qrPreview}
+              alt="QR Code"
+              className="w-64 h-64 p-2 mx-auto mb-4 bg-white border rounded-lg"
+            />
+          ) : (
+            <p>Loading QR...</p>
+          )}
+
+          <Button
+            className="w-full bg-primary"
+            onClick={async () => {
+              if (!qrPreview) return;
+
+              const response = await fetch(qrPreview);
+              const blob = await response.blob();
+
+              const link = document.createElement('a');
+              link.href = URL.createObjectURL(blob);
+              link.download = `Table-${qrTableNumber}-QR.png`;
+              link.click();
+            }}
+          >
+            Download QR
+          </Button>
+        </div>
+      </Modal>
+    </div>
+  );
+}
