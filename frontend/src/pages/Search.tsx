@@ -9,7 +9,19 @@ import { useCart } from '@/context/CartContext';
 export default function Search() {
   const [searchTerm, setSearchTerm] = useState('');
   const { addToCart } = useCart();
-  const items = menuData.menus as MenuItem[];
+
+  const items: MenuItem[] = (menuData.menus as any[]).map((item) => ({
+    id: String(item.id),
+    name: item.name,
+    price: item.price,
+    image_url: item.image,
+    status: item.available,
+    category: item.category,
+    description: item.description,
+    homeImage: item.homeImage,
+    isPopular: item.isPopular,
+    isRecommended: item.isRecommended,
+  }));
 
   const filteredItems = items.filter((item) =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -33,7 +45,7 @@ export default function Search() {
           displayItems.map((item) => (
             <MenuCard
               key={item.id}
-              item={item} // <-- REQUIRED prop
+              item={item}
               onAdd={(menuItem) => addToCart(menuItem, 1)}
             />
           ))

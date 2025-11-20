@@ -8,7 +8,7 @@ interface MenuListCardProps {
   onAdd?: (item: MenuItem) => void;
 }
 
-export default function MenuCard({ item }: MenuListCardProps) {
+export default function MenuCard({ item, onAdd }: MenuListCardProps) {
   const { id, name, price, image_url, status } = item;
   const { addToCart } = useCart();
 
@@ -25,7 +25,11 @@ export default function MenuCard({ item }: MenuListCardProps) {
   };
 
   const handleAddToCart = () => {
-    addToCart(item, 1);
+    if (onAdd) {
+      onAdd(item);
+    } else {
+      addToCart(item, 1);
+    }
     toast.success(`${item.name} added to cart!`);
   };
 
