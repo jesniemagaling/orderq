@@ -9,6 +9,7 @@ import Orders from './pages/Orders';
 import PaymentMethod from './pages/PaymentMethod';
 import OrderStatus from './pages/OrderStatus';
 import Receipt from './pages/Receipt';
+import OrderRedirect from './pages/OrderRedirect';
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
       <MainLayout>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/order" element={<OrderRedirect />} />
           <Route path="/search" element={<Search />} />
           <Route path="/menu" element={<Menu />} />
           <Route path="/menu/:id" element={<FoodDetails />} />

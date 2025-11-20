@@ -1,5 +1,5 @@
 import { MenuItem } from '@/types/menu';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useCart } from '@/context/CartContext';
 
@@ -12,6 +12,18 @@ export default function MenuCard({ item }: MenuListCardProps) {
   const { id, name, price, image_url, status } = item;
   const { addToCart } = useCart();
 
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const table = searchParams.get('table');
+  const token = searchParams.get('token');
+
+  const buildLink = () => {
+    if (table && token) {
+      return `/menu/${id}?table=${table}&token=${token}`;
+    }
+    return `/menu/${id}`;
+  };
+
   const handleAddToCart = () => {
     addToCart(item, 1);
     toast.success(`${item.name} added to cart!`);
@@ -19,7 +31,7 @@ export default function MenuCard({ item }: MenuListCardProps) {
 
   return (
     <div className="flex items-center justify-between w-full p-3 bg-white rounded-2xl shadow-dual max-w-[310px]">
-      <Link to={`/menu/${id}`} className="flex items-center flex-grow">
+      <Link to={buildLink()} className="flex items-center flex-grow">
         <div className="flex-shrink-0 w-[58px] h-[48px] rounded-[10px] overflow-hidden">
           <img
             src={image_url}

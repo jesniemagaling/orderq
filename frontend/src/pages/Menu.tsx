@@ -7,39 +7,55 @@ import CategoryList from '@/components/CategoryList';
 import { useMenu } from '@/hooks/useMenu';
 import { useCategories } from '@/hooks/useCategories';
 import { useCart } from '@/context/CartContext';
+import api from '@/lib/axios';
 
 export default function Menu() {
   const location = useLocation();
-  const query = location.search;
   const searchParams = new URLSearchParams(location.search);
+
   const table = searchParams.get('table');
+  const tokenFromURL = searchParams.get('token');
   const searchQuery = searchParams.get('search') || '';
 
   const [searchTerm, setSearchTerm] = useState(searchQuery);
-  const [activeCategory, setActiveCategory] = useState<string>('all');
+  const [activeCategory, setActiveCategory] = useState('all');
+  const [sessionToken, setSessionToken] = useState<string | null>(null);
 
   const { menuItems, loading: menuLoading, error: menuError } = useMenu();
   const { categories, loading: catLoading, error: catError } = useCategories();
 
   const { addToCart } = useCart();
 
+  // Save token from URL to state/localStorage and axios
+  useEffect(() => {
+    if (tokenFromURL) {
+      setSessionToken(tokenFromURL);
+      localStorage.setItem('sessionToken', tokenFromURL);
+      api.defaults.headers.common['Authorization'] = `Bearer ${tokenFromURL}`;
+    } else {
+      // If no token in URL, check localStorage
+      const storedToken = localStorage.getItem('sessionToken');
+      if (storedToken) {
+        setSessionToken(storedToken);
+        api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+      }
+    }
+  }, [tokenFromURL]);
+
   // Sync search input with URL
   useEffect(() => {
     setSearchTerm(searchQuery);
   }, [searchQuery]);
 
-  // Map DB categories to "slug" IDs from backend
+  // Filter menu items by search term & category
   const filteredItems = menuItems.filter((item) => {
     const matchesSearch = item.name
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
-
     const categorySlug =
       item.category?.toLowerCase().replace(/\s+/g, '-') || '';
-
     const matchesCategory =
       activeCategory === 'all' || categorySlug === activeCategory;
-
     return matchesSearch && matchesCategory;
   });
 
@@ -47,7 +63,9 @@ export default function Menu() {
     <>
       <Nav
         title={table ? `Table ${table}` : 'Menu'}
-        backLink={`/menu${query}`}
+        backLink={`/menu?table=${table}${
+          sessionToken ? `&token=${sessionToken}` : ''
+        }`}
       />
 
       <SearchInput

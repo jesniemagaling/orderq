@@ -3,6 +3,19 @@ import { Link, useLocation } from 'react-router-dom';
 export default function BottomNavbar() {
   const location = useLocation();
 
+  // Parse current query params
+  const searchParams = new URLSearchParams(location.search);
+  const table = searchParams.get('table');
+  const token = searchParams.get('token');
+
+  // Function to build link with optional query params
+  const buildLink = (path: string) => {
+    if (table && token) {
+      return `${path}?table=${table}&token=${token}`;
+    }
+    return path;
+  };
+
   const navItems = [
     { path: '/', label: 'Home', icon: '/icons/home.svg' },
     { path: '/search', label: 'Search', icon: '/icons/search.svg' },
@@ -15,7 +28,10 @@ export default function BottomNavbar() {
       <ul className="flex items-center justify-around max-w-[390px] mx-auto p-4 text-red-900">
         {navItems.map((item) => (
           <li key={item.path} className="flex flex-col items-center">
-            <Link to={item.path} className="flex flex-col items-center">
+            <Link
+              to={buildLink(item.path)}
+              className="flex flex-col items-center"
+            >
               <img
                 src={item.icon}
                 alt={item.label}
