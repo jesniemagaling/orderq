@@ -43,10 +43,12 @@ export default function AddMenu() {
     ? `#${nextProductId.toString().padStart(6, '0')}`
     : 'Loading...';
 
-  // Image upload preview (optional)
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (preview && preview.startsWith('blob:')) {
+        URL.revokeObjectURL(preview);
+      }
       setImage(file);
       setPreview(URL.createObjectURL(file));
     }
@@ -61,18 +63,7 @@ export default function AddMenu() {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Automatically determine status based on stock count
   const computedStatus = Number(form.stocks) > 0 ? 'in_stock' : 'out_of_stock';
-
-  // Convert uploaded image to Base64 (for image_url field)
-  const convertToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-    });
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,25 +77,22 @@ export default function AddMenu() {
     }
 
     try {
-      let imageUrl = '';
+      const formData = new FormData();
+      formData.append('name', form.name);
+      formData.append('description', form.description);
+      formData.append('price', String(priceValue));
+      formData.append('category', form.category);
+      formData.append('stocks', String(stockValue));
+      formData.append('status', computedStatus);
 
-      // Convert image to base64 (optional)
-      if (image) {
-        imageUrl = await convertToBase64(image);
-      }
+      if (image) formData.append('image', image);
 
-      // Send JSON instead of FormData
-      const payload = {
-        name: form.name,
-        description: form.description,
-        price: form.price,
-        category: form.category,
-        stocks: form.stocks,
-        status: computedStatus,
-        image_url: imageUrl || null, // base64 or null
-      };
+      // Debug log
+      console.log('Submitting menu with formData:', formData);
 
-      await api.post('/menu', payload);
+      await api.post('/menu', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
 
       toast.success(`${form.name.trim() || 'New item'} added to menu!`);
       navigate('/admin/menu');
@@ -115,7 +103,7 @@ export default function AddMenu() {
   };
 
   return (
-    <div className="flex flex-col justify-between ">
+    <div className="flex flex-col justify-between">
       {/* Header */}
       <div className="flex items-center gap-4 mb-10">
         <Button
@@ -127,7 +115,6 @@ export default function AddMenu() {
         <h1 className="text-3xl font-bold text-gray-900">Menu</h1>
       </div>
 
-      {/* Form */}
       <form
         onSubmit={handleSubmit}
         className="flex flex-wrap justify-between flex-1 gap-8"
@@ -236,7 +223,6 @@ export default function AddMenu() {
             </div>
           </div>
 
-          {/* Status */}
           <div>
             <label className="block text-sm font-medium text-gray-700">
               Status
@@ -266,14 +252,12 @@ export default function AddMenu() {
             />
           </div>
         </div>
-      </form>
 
-      {/* Save Button */}
-      <div className="flex justify-end mt-6">
-        <Button type="submit" onClick={handleSubmit}>
-          Save Menu
-        </Button>
-      </div>
+        {/* Save Button */}
+        <div className="flex justify-end w-full mt-6">
+          <Button type="submit">Save Menu</Button>
+        </div>
+      </form>
     </div>
   );
 }
