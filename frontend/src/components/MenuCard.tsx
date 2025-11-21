@@ -57,7 +57,8 @@ export default function MenuCard({ item, onAdd }: MenuListCardProps) {
         <div className="flex flex-col flex-grow px-3">
           <h3 className="truncate heading-3">{name}</h3>
           <p className="font-bold text-yellow-500 heading-3">
-            ₱ {Number(price).toFixed(2)}
+            ₱{' '}
+            {Number(price) % 1 === 0 ? Number(price) : Number(price).toFixed(2)}
           </p>
         </div>
       </Link>

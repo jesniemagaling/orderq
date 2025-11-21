@@ -1,28 +1,61 @@
 import Nav from '@/components/Nav';
 import SearchInput from '@/components/SearchInput';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MenuItem } from '@/types/menu';
-import menuData from '@/data/menu.json';
 import MenuCard from '@/components/MenuCard';
 import { useCart } from '@/context/CartContext';
+import api from '@/lib/axios';
 
 export default function Search() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [items, setItems] = useState<MenuItem[]>([]);
   const { addToCart } = useCart();
 
-  const items: MenuItem[] = (menuData.menus as any[]).map((item) => ({
-    id: String(item.id),
-    name: item.name,
-    price: item.price,
-    image_url: item.image,
-    status: item.available,
-    category: item.category,
-    description: item.description,
-    homeImage: item.homeImage,
-    isPopular: item.isPopular,
-    isRecommended: item.isRecommended,
-  }));
+  const baseUrl = import.meta.env.VITE_API_URL || '';
+  const baseImageUrl = baseUrl.replace('/api', '');
 
+  // Fetch menu items from MySQL API
+  useEffect(() => {
+    const fetchMenu = async () => {
+      try {
+        const { data } = await api.get('/menu'); // adjust endpoint if needed
+
+        const mappedItems: MenuItem[] = data.map((item: any) => {
+          const rawPath = item.image_url || '';
+          const cleanPath = rawPath.replace('/api', '').trim();
+
+          const fixedImage = cleanPath.startsWith('http')
+            ? cleanPath.includes('?')
+              ? `${cleanPath}&t=${Date.now()}`
+              : `${cleanPath}?t=${Date.now()}`
+            : `${baseImageUrl}${cleanPath}${
+                cleanPath.includes('?') ? '&t=' : '?t='
+              }${Date.now()}`;
+
+          return {
+            id: String(item.id),
+            name: item.name,
+            price: Number(item.price),
+            image_url: fixedImage,
+            status: item.status === 'in_stock' ? 'in_stock' : 'out_of_stock',
+            category: item.category,
+            description: item.description,
+            homeImage: item.image_url || '',
+            isPopular: Boolean(item.isPopular),
+            isRecommended: Boolean(item.isRecommended),
+          };
+        });
+
+        setItems(mappedItems);
+      } catch (err) {
+        console.error('Failed to fetch menu:', err);
+      }
+    };
+
+    fetchMenu();
+  }, [baseImageUrl]);
+
+  // Filter by search term
   const filteredItems = items.filter((item) =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
