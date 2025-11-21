@@ -59,9 +59,16 @@ export default function EditMenu({
         });
 
         if (item.image_url) {
-          const fullUrl = `${import.meta.env.VITE_BACKEND_URL}${
-            item.image_url
-          }?t=${Date.now()}`;
+          let fullUrl = '';
+          if (item.image_url.startsWith('http')) {
+            fullUrl = `${item.image_url}?t=${Date.now()}`;
+          } else {
+            const baseUrl =
+              import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '') || '';
+            const cleanPath = item.image_url.replace(/^\/+/, '');
+            fullUrl = `${baseUrl}/${cleanPath}?t=${Date.now()}`;
+          }
+          console.log('Image full URL:', fullUrl);
           setPreview(fullUrl);
           setExistingImage(item.image_url);
         }
@@ -179,7 +186,7 @@ export default function EditMenu({
           <div className="flex flex-col items-center justify-center flex-1 min-w-[250px]">
             <label
               htmlFor="image"
-              className="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg w-48 h-48 flex flex-col items-center justify-center text-gray-500 hover:border-[#820D17] transition"
+              className="cursor-pointer p-2 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-500 hover:border-[#820D17] transition"
             >
               {preview ? (
                 <img
