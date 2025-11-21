@@ -17,6 +17,7 @@ export default function MenuCard({ item, onAdd }: MenuListCardProps) {
   const table = searchParams.get('table');
   const token = searchParams.get('token');
 
+  // Build link with table & token if available
   const buildLink = () => {
     if (table && token) {
       return `/menu/${id}?table=${table}&token=${token}`;
@@ -24,6 +25,7 @@ export default function MenuCard({ item, onAdd }: MenuListCardProps) {
     return `/menu/${id}`;
   };
 
+  // Handle adding to cart
   const handleAddToCart = () => {
     if (onAdd) {
       onAdd(item);
@@ -33,26 +35,34 @@ export default function MenuCard({ item, onAdd }: MenuListCardProps) {
     toast.success(`${item.name} added to cart!`);
   };
 
+  // Add cache-busting to image_url
+  const baseUrl = import.meta.env.VITE_API_URL || '';
+  const displayImage = image_url
+    ? image_url.startsWith('http')
+      ? `${image_url}?t=${Date.now()}`
+      : `${import.meta.env.VITE_API_URL}${image_url}?t=${Date.now()}`
+    : '/images/placeholder.png';
+
   return (
     <div className="flex items-center justify-between w-full p-3 bg-white rounded-2xl shadow-dual max-w-[310px]">
       <Link to={buildLink()} className="flex items-center flex-grow">
         <div className="flex-shrink-0 w-[58px] h-[48px] rounded-[10px] overflow-hidden">
           <img
-            src={image_url}
+            src={displayImage}
             alt={name}
             className="object-cover w-full h-full rounded-[10px]"
           />
         </div>
 
         <div className="flex flex-col flex-grow px-3">
-          <h3 className="heading-3">{name}</h3>
+          <h3 className="truncate heading-3">{name}</h3>
           <p className="font-bold text-yellow-500 heading-3">
-            ₱ {Math.round(price)}
+            ₱ {Number(price).toFixed(2)}
           </p>
         </div>
       </Link>
 
-      {status ? (
+      {status === 'in_stock' ? (
         <button
           onClick={handleAddToCart}
           className="flex items-center justify-center transition-transform rounded-full hover:scale-110"

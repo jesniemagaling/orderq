@@ -11,6 +11,16 @@ interface EditMenuProps {
   onUpdated: () => Promise<void>;
 }
 
+interface MenuItem {
+  id: number;
+  category: string;
+  name: string;
+  stocks: number;
+  price: number;
+  description: string;
+  image_url?: string;
+}
+
 export default function EditMenu({
   isOpen,
   onClose,
@@ -27,15 +37,19 @@ export default function EditMenu({
 
   const [image, setImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [existingImage, setExistingImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [categories, setCategories] = useState<string[]>([]);
 
-  // Fetch menu item when modal opens
+  // Fetch menu item and categories
   useEffect(() => {
-    const fetchItem = async () => {
-      if (!menuId || !isOpen) return;
+    if (!menuId || !isOpen) return;
+
+    const fetchMenuItem = async () => {
       try {
-        const res = await api.get(`/menu/${menuId}`);
+        const res = await api.get<MenuItem>(`/menu/${menuId}`);
         const item = res.data;
+
         setForm({
           category: item.category || '',
           name: item.name || '',
@@ -43,13 +57,31 @@ export default function EditMenu({
           price: item.price?.toString() || '',
           description: item.description || '',
         });
-        if (item.image_url) setPreview(item.image_url);
+
+        if (item.image_url) {
+          const fullUrl = `${import.meta.env.VITE_BACKEND_URL}${
+            item.image_url
+          }?t=${Date.now()}`;
+          setPreview(fullUrl);
+          setExistingImage(item.image_url);
+        }
       } catch (err) {
         console.error('Failed to fetch menu item:', err);
+        toast.error('Failed to load menu item');
       }
     };
 
-    fetchItem();
+    const fetchCategories = async () => {
+      try {
+        const res = await api.get('/menu/categories');
+        setCategories(res.data.map((cat: any) => cat.name));
+      } catch (err) {
+        console.error('Failed to fetch categories:', err);
+      }
+    };
+
+    fetchMenuItem();
+    fetchCategories();
   }, [menuId, isOpen]);
 
   const handleChange = (
@@ -64,58 +96,61 @@ export default function EditMenu({
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (preview && preview.startsWith('blob:')) {
+        URL.revokeObjectURL(preview);
+      }
       setImage(file);
       setPreview(URL.createObjectURL(file));
     }
   };
 
-  const convertToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-    });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (!menuId) return;
 
     const priceValue = Number(form.price);
     const stockValue = Number(form.stocks);
 
-    if (priceValue < 1 || stockValue < 1) {
-      toast.warn('Price and Stocks must be at least 1.');
+    if (priceValue < 1 || stockValue < 0) {
+      toast.warn('Price must be ≥ 1 and Stocks ≥ 0.');
       return;
     }
 
     try {
       setLoading(true);
-      let imageUrl = preview;
 
-      if (image) {
-        imageUrl = await convertToBase64(image);
+      const formData = new FormData();
+      formData.append('name', form.name.trim());
+      formData.append('description', form.description);
+      formData.append('price', String(priceValue));
+      formData.append('category', form.category);
+      formData.append('stocks', String(stockValue));
+      formData.append('status', stockValue > 0 ? 'in_stock' : 'out_of_stock');
+
+      if (image) formData.append('image', image);
+
+      // Update the menu item
+      await api.put(`/menu/${menuId}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      toast.success(`${form.name.trim()} updated successfully!`);
+
+      // Refetch updated item to get the new image URL
+      const updatedRes = await api.get<MenuItem>(`/menu/${menuId}`);
+      if (updatedRes.data.image_url) {
+        const fullUrl = `${import.meta.env.VITE_BACKEND_URL}${
+          updatedRes.data.image_url
+        }?t=${Date.now()}`;
+        setPreview(fullUrl);
+        setExistingImage(updatedRes.data.image_url);
       }
 
-      const payload = {
-        name: form.name.trim(),
-        description: form.description,
-        price: priceValue,
-        category: form.category,
-        stocks: stockValue,
-        status: stockValue > 0 ? 'in_stock' : 'out_of_stock',
-        image_url: imageUrl || null,
-      };
-
-      await api.put(`/menu/${menuId}`, payload);
-
-      toast.success(`${form.name.trim() || 'Menu item'} updated successfully!`);
       await onUpdated();
       onClose();
     } catch (err) {
       console.error('Failed to update menu:', err);
-      toast.error(`${form.name.trim() || 'Menu item'} failed to update.`);
+      toast.error(`${form.name.trim()} failed to update.`);
     } finally {
       setLoading(false);
     }
@@ -168,7 +203,7 @@ export default function EditMenu({
             </label>
           </div>
 
-          {/* Form Fields */}
+          {/* FORM FIELDS */}
           <div className="flex-1 min-w-[250px] space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">
@@ -182,9 +217,11 @@ export default function EditMenu({
                 className="w-full border border-gray-300 rounded-md px-3 py-2 mt-2 focus:ring-2 focus:ring-[#820D17]/40"
               >
                 <option value="">Choose Category</option>
-                <option value="Iced">Iced</option>
-                <option value="Fruity">Fruity</option>
-                <option value="Hot">Hot</option>
+                {categories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -198,7 +235,6 @@ export default function EditMenu({
                 value={form.name}
                 onChange={handleChange}
                 required
-                placeholder="Product Name"
                 className="w-full border border-gray-300 rounded-md px-3 py-2 mt-2 focus:ring-2 focus:ring-[#820D17]/40"
               />
             </div>
@@ -213,7 +249,7 @@ export default function EditMenu({
                   name="stocks"
                   value={form.stocks}
                   onChange={handleChange}
-                  min={1}
+                  min={0}
                   required
                   className="w-full border border-gray-300 rounded-md px-3 py-2 mt-2 focus:ring-2 focus:ring-[#820D17]/40"
                 />
@@ -242,32 +278,27 @@ export default function EditMenu({
                 name="description"
                 value={form.description}
                 onChange={handleChange}
-                placeholder="Description"
                 rows={3}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 mt-2 focus:ring-2 focus:ring-[#820D17]"
+                className="w-full border border-gray-300 rounded-md px-3 py-2 mt-2 focus:ring-2 focus:ring-[#820D17]/40"
               />
             </div>
           </div>
-        </form>
 
-        {/* Footer Buttons */}
-        <div className="flex justify-end gap-3 mt-6">
-          <Button
-            type="button"
-            onClick={onClose}
-            className="text-gray-800 bg-gray-300 hover:bg-gray-400"
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            onClick={handleSubmit}
-            disabled={loading}
-            className="bg-[#820D17] text-white hover:bg-[#9a1620]"
-          >
-            {loading ? 'Saving...' : 'Save Changes'}
-          </Button>
-        </div>
+          {/* FOOTER */}
+          <div className="flex justify-end w-full gap-3 mt-6">
+            <Button onClick={onClose} className="text-gray-800 bg-gray-300">
+              Cancel
+            </Button>
+
+            <Button
+              type="submit"
+              disabled={loading}
+              className="bg-[#820D17] text-white hover:bg-[#9a1620]"
+            >
+              {loading ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </div>
+        </form>
       </div>
     </div>
   );

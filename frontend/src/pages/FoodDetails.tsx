@@ -1,9 +1,7 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { MenuItem } from '@/types/menu';
-import menuData from '@/data/menu.json';
 import BackButton from '@/components/BackButton';
-import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { toast } from 'react-toastify';
 import { useCart } from '@/context/CartContext';
@@ -13,46 +11,55 @@ import api from '@/lib/axios';
 export default function FoodDetails() {
   const { id } = useParams<{ id: string }>();
   const [food, setFood] = useState<MenuItem | null>(null);
-  const [quantity, setQuantity] = useState<number>(1);
+  const [quantity, setQuantity] = useState(1);
+  const [imageSrc, setImageSrc] = useState('');
   const { addToCart, cartCount } = useCart();
   const navigate = useNavigate();
 
-  const handleIncrease = () => {
-    setQuantity((q) => Math.min(q + 1, 99));
-  };
+  const handleIncrease = () => setQuantity((q) => Math.min(q + 1, 99));
+  const handleDecrease = () => setQuantity((q) => Math.max(1, q - 1));
 
-  const handleDecrease = () => {
-    setQuantity((q) => Math.max(1, q - 1));
-  };
+  const baseUrl = import.meta.env.VITE_API_URL || '';
 
+  // Fetch food details
   useEffect(() => {
     if (!id) return;
 
     const fetchFood = async () => {
       try {
         const { data } = await api.get(`/menu/${id}`);
+
         const mappedFood: MenuItem = {
           id: String(data.id),
           name: data.name,
           category: data.category,
           description: data.description,
           price: Number(data.price),
-          image_url: data.image_url,
-          homeImage: data.image_url,
+          image_url: data.image_url || '',
+          homeImage: data.image_url || '',
           status: data.status,
           isPopular: Boolean(data.isPopular),
           isRecommended: Boolean(data.isRecommended),
         };
 
         setFood(mappedFood);
+
+        const baseImageUrl = baseUrl.replace('/api', '');
+        let cleanPath = (mappedFood.image_url || '').replace('/api', '').trim();
+        const displayImage = cleanPath.startsWith('http')
+          ? `${cleanPath}?t=${Date.now()}`
+          : `${baseImageUrl}${cleanPath}?t=${Date.now()}`;
+
+        setImageSrc(displayImage);
       } catch (err) {
         console.error('Error fetching food:', err);
         setFood(null);
+        setImageSrc('/images/placeholder.png');
       }
     };
 
     fetchFood();
-  }, [id]);
+  }, [id, baseUrl]);
 
   const handleAddToCart = () => {
     if (!food) return;
@@ -63,12 +70,11 @@ export default function FoodDetails() {
     setQuantity(1);
   };
 
-  if (!food) {
-    return <p className="p-6 text-gray-500">Food item not found.</p>;
-  }
+  if (!food) return <p className="p-6 text-gray-500">Food item not found.</p>;
 
   return (
     <div className="grid items-center justify-center gap-4">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <BackButton size={36} />
         <Link
@@ -98,23 +104,27 @@ export default function FoodDetails() {
           </div>
         </Link>
       </div>
+
+      {/* Food Details */}
       <div className="w-full max-w-xl pb-4 space-y-5 sm:pb-8">
         <img
-          src={food.image_url}
+          src={imageSrc}
           alt={food.name}
           className="w-full max-w-xl shadow-lg max-h-lg rounded-2xl"
         />
+
         <h1 className="mb-2 text-3xl font-medium sm:text-4xl">{food.name}</h1>
-        <p className="grid gap-2 text-gray-500 ">
+
+        <p className="grid gap-2 text-gray-500">
           <span className="text-2xl text-black">Description</span>
           {food.description}
         </p>
+
         <div className="flex items-center gap-3">
           <span className="sm:text-lg">Quantity:</span>
           <button
             onClick={handleDecrease}
             className="text-lg text-primary-500 hover:opacity-70"
-            aria-label="Decrease quantity"
           >
             <Minus size={16} />
           </button>
@@ -124,18 +134,19 @@ export default function FoodDetails() {
           <button
             onClick={handleIncrease}
             className="text-lg text-primary-500 hover:opacity-70"
-            aria-label="Increase quantity"
           >
             <Plus size={16} />
           </button>
         </div>
+
         <p className="text-base font-bold text-yellow-500 sm:text-lg">
           <span className="text-lg font-medium text-black sm:text-xl">
             Price:{' '}
           </span>
-          ₱{food.price}
+          ₱{food.price.toFixed(2)}
         </p>
-        {food.status ? (
+
+        {food.status === 'in_stock' ? (
           <Button onClick={handleAddToCart} variant="default" className="py-6">
             Add to Cart
           </Button>

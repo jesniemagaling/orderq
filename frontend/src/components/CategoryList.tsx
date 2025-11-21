@@ -48,7 +48,7 @@ export default function CategoryList({
           <SwiperSlide key={cat.id} style={{ width: 'auto' }}>
             <button
               onClick={() => onSelect(cat.id)}
-              className="flex flex-col items-center focus:outline-none"
+              className="flex flex-col items-center p-1 focus:outline-none"
             >
               <div
                 className={`flex items-center justify-center w-16 h-16 rounded-2xl transition-all duration-200 

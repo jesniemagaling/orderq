@@ -11,7 +11,17 @@ export function useMenu() {
     const fetchMenu = async () => {
       try {
         const res = await api.get<MenuItem[]>('/menu');
-        setMenuItems(res.data);
+
+        const data = res.data.map((item) => ({
+          ...item,
+          image_url: item.image_url
+            ? `${import.meta.env.VITE_API_URL.replace('/api', '')}${
+                item.image_url
+              }?t=${Date.now()}`
+            : '/images/placeholder.png',
+        }));
+
+        setMenuItems(data);
       } catch (err) {
         console.error('Failed to fetch menu items:', err);
         setError('Failed to load menu');
@@ -23,5 +33,5 @@ export function useMenu() {
     fetchMenu();
   }, []);
 
-  return { menuItems, loading, error };
+  return { menuItems, loading, error, setMenuItems };
 }
