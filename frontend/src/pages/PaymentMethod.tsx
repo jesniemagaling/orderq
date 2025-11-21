@@ -79,7 +79,6 @@ export default function PaymentPage() {
 
   const qrTableNumber = Number(searchParams.get('table'));
 
-  // Auto-create/reuse session if table/sessionToken missing
   useEffect(() => {
     if (!table || !sessionToken) {
       if (!qrTableNumber) {

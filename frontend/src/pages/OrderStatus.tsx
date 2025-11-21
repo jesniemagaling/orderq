@@ -18,11 +18,9 @@ const socket: Socket = io('http://localhost:5000', {
 });
 
 const statusSteps = [
-  { title: 'Order Confirmed', desc: 'Your order has been received' },
-  { title: 'Order is being prepared', desc: 'Your food is getting prepared' },
-  { title: 'Order Prepared', desc: 'Your order has been prepared' },
-  { title: 'Delivery in process', desc: 'Hang on, your food is on the way' },
-  { title: 'Delivery successfully done', desc: 'Enjoy your food!' },
+  { title: 'Order Pending', desc: 'Your order has been placed' },
+  { title: 'Order Confirmed', desc: 'Your order has been confirmed' },
+  { title: 'Order Served', desc: 'Your order has been delivered' },
 ];
 
 type OrderItem = {
@@ -52,6 +50,7 @@ export default function TrackOrder() {
   const [error, setError] = useState('');
   const [searchParams] = useSearchParams();
   const sessionToken = searchParams.get('token');
+  const table = searchParams.get('table');
 
   // Fetch order initially
   useEffect(() => {
@@ -135,10 +134,6 @@ export default function TrackOrder() {
         return 1;
       case 'served':
         return 2;
-      case 'delivery_in_process':
-        return 3;
-      case 'completed':
-        return 4;
       default:
         return 0;
     }
@@ -180,16 +175,23 @@ export default function TrackOrder() {
 
       <div className="grid w-full gap-4 place-items-center">
         <Link
-          to={`/receipt/${order.id}`}
+          to={`/receipt/${order.id}?table=${order.table_number}&token=${sessionToken}`}
           className="flex justify-center w-full"
         >
           <Button variant="default" className="py-6">
             View Receipt
           </Button>
         </Link>
-        <Link to="/menu">
-          <Button variant="link">Back to Menu</Button>
-        </Link>
+
+        <Button
+          variant="link"
+          className="w-full"
+          onClick={() =>
+            navigate(`/menu?table=${table ?? ''}&token=${sessionToken ?? ''}`)
+          }
+        >
+          Back to Menu
+        </Button>
       </div>
     </div>
   );

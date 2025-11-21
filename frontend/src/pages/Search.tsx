@@ -14,11 +14,11 @@ export default function Search() {
   const baseUrl = import.meta.env.VITE_API_URL || '';
   const baseImageUrl = baseUrl.replace('/api', '');
 
-  // Fetch menu items from MySQL API
+  // Fetch menu items
   useEffect(() => {
     const fetchMenu = async () => {
       try {
-        const { data } = await api.get('/menu'); // adjust endpoint if needed
+        const { data } = await api.get('/menu');
 
         const mappedItems: MenuItem[] = data.map((item: any) => {
           const rawPath = item.image_url || '';

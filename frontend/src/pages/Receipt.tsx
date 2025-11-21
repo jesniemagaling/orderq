@@ -1,8 +1,8 @@
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import BackButton from '@/components/BackButton';
-import { useParams } from 'react-router-dom';
-import { useCart } from '@/context/CartContext';
+import api from '@/lib/axios';
 
 export default function Receipt() {
   const storeInfo = {
@@ -13,13 +13,52 @@ export default function Receipt() {
   };
 
   const { orderId } = useParams();
-  const { orders } = useCart();
-  const order = orders.find((o) => o.id === orderId);
+  const [searchParams] = useSearchParams();
+  const sessionToken = searchParams.get('token');
 
+  const [order, setOrder] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!orderId || !sessionToken) return;
+
+    const fetchOrder = async () => {
+      try {
+        setLoading(true);
+        const res = await api.get(`/orders/by-session?token=${sessionToken}`);
+        const foundOrder = res.data.find(
+          (o: any) => o.id.toString() === orderId
+        );
+
+        if (!foundOrder) {
+          setError('Receipt not found.');
+        } else {
+          // Ensure numbers
+          foundOrder.total_amount = Number(foundOrder.total_amount);
+          foundOrder.items = foundOrder.items.map((i: any) => ({
+            ...i,
+            price: Number(i.price),
+          }));
+          setOrder(foundOrder);
+        }
+      } catch (err: any) {
+        console.error('Error fetching order:', err);
+        setError('Failed to fetch receipt.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrder();
+  }, [orderId, sessionToken]);
+
+  if (loading) return <p className="mt-6 text-center">Loading receipt...</p>;
+  if (error) return <p className="mt-6 text-center text-red-500">{error}</p>;
   if (!order) return <p className="mt-6 text-center">Receipt not found.</p>;
 
-  const tax = order.total * 0.1;
-  const totalWithTax = order.total + tax;
+  const tax = order.total_amount * 0.1;
+  const totalWithTax = order.total_amount + tax;
 
   return (
     <>
@@ -32,7 +71,7 @@ export default function Receipt() {
           <p>UID Nr. : {storeInfo.uid}</p>
 
           <div className="mt-4 text-left">
-            {order.items.map((item, i) => (
+            {order.items.map((item: any, i: number) => (
               <div key={i} className="flex justify-between">
                 <span>{item.name}</span>
                 <span>₱{item.price}</span>
@@ -42,15 +81,17 @@ export default function Receipt() {
 
           <div className="flex justify-between mb-4">
             <span>Tax (10%)</span>
-            <span>₱{tax}</span>
+            <span>₱{tax.toFixed(2)}</span>
           </div>
 
           <div className="flex justify-between pt-2 font-bold border-t border-black">
             <span>TOTAL</span>
-            <span>₱{totalWithTax}</span>
+            <span>₱{totalWithTax.toFixed(2)}</span>
           </div>
 
-          <p className="mt-2">Order Date: {order.createdAt}</p>
+          <p className="mt-2">
+            Order Date: {new Date(order.created_at).toLocaleString()}
+          </p>
 
           <div className="mt-4 text-xs leading-tight">
             <p>Nr. ########3941 0000</p>

@@ -4,7 +4,6 @@ import api from '../lib/axios';
 import Button from '../components/ui/Button';
 import Modal from '../components/ui/Modal';
 import { debounce } from 'lodash';
-import QRCode from 'qrcode';
 
 const socket: Socket = io('http://localhost:5000', {
   transports: ['websocket'], // ensures stable connection
