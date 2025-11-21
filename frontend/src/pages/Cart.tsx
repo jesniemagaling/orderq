@@ -45,21 +45,35 @@ export default function Cart() {
           <p className="mt-6 text-center text-gray-500">Your cart is empty.</p>
         ) : (
           <>
-            {cart.map((item) => (
-              <div
-                key={item.id}
-                className="cursor-pointer"
-                onClick={() => navigate(`/menu/${item.id}`)}
-              >
-                <CartItem
-                  item={item}
-                  quantity={item.quantity}
-                  onIncrease={() => handleIncrease(item)}
-                  onDecrease={() => handleDecrease(item)}
-                  onRemove={() => handleRemove(item)}
-                />
-              </div>
-            ))}
+            {cart.map((item) => {
+              const baseImageUrl = import.meta.env.VITE_API_URL.replace(
+                '/api',
+                ''
+              );
+              const cleanPath = (item.image_url || '')
+                .replace('/api', '')
+                .trim();
+
+              const fixedImageUrl = cleanPath.startsWith('http')
+                ? cleanPath
+                : `${baseImageUrl}${cleanPath}`;
+
+              return (
+                <div
+                  key={item.id}
+                  className="cursor-pointer"
+                  onClick={() => navigate(`/menu/${item.id}`)}
+                >
+                  <CartItem
+                    item={{ ...item, image_url: fixedImageUrl }}
+                    quantity={item.quantity}
+                    onIncrease={() => handleIncrease(item)}
+                    onDecrease={() => handleDecrease(item)}
+                    onRemove={() => handleRemove(item)}
+                  />
+                </div>
+              );
+            })}
 
             <Separator />
 
