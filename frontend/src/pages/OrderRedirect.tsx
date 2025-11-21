@@ -14,7 +14,7 @@ export default function OrderRedirect() {
     if (table && token) {
       navigate(`/menu?table=${table}&token=${token}`, { replace: true });
     } else {
-      navigate('/', { replace: true });
+      navigate('/session-expired', { replace: true });
     }
   }, [location, navigate]);
 

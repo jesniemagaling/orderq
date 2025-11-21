@@ -45,7 +45,7 @@ export default function Cart() {
           <p className="mt-6 text-center text-gray-500">Your cart is empty.</p>
         ) : (
           <>
-            {cart.map((item) => {
+            {cart.map((item, index) => {
               const baseImageUrl = import.meta.env.VITE_API_URL.replace(
                 '/api',
                 ''
@@ -60,7 +60,7 @@ export default function Cart() {
 
               return (
                 <div
-                  key={item.id}
+                  key={`${item.id}-${index}`}
                   className="cursor-pointer"
                   onClick={() => navigate(`/menu/${item.id}`)}
                 >
@@ -80,7 +80,11 @@ export default function Cart() {
             <div className="flex items-center justify-between m-6">
               <p className="text-lg font-medium">Total:</p>
               <p className="text-xl font-bold text-yellow-500">
-                ₱ {totalPrice.toFixed(2)}
+                ₱{' '}
+                {totalPrice.toLocaleString(undefined, {
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 0,
+                })}
               </p>
             </div>
 

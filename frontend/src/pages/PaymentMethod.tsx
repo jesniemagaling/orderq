@@ -80,21 +80,28 @@ export default function PaymentPage() {
   const qrTableNumber = Number(searchParams.get('table'));
 
   useEffect(() => {
-    if (!table || !sessionToken) {
-      if (!qrTableNumber) {
-        toast.error('Session expired. Please go back to menu.');
-        navigate('/');
-        return;
-      }
-      setLoadingSession(true);
-      setTableWithSession(qrTableNumber)
-        .catch(() => {
-          toast.error('Failed to create session. Please go back to menu.');
-          navigate('/');
-        })
-        .finally(() => setLoadingSession(false));
+    if (!qrTableNumber) {
+      toast.error('Invalid table number.');
+      navigate('/');
+      return;
     }
-  }, [table, sessionToken, qrTableNumber]);
+
+    // Case 1: Same table as saved → just continue
+    if (table === qrTableNumber && sessionToken) return;
+
+    // Case 2: Different table → request NEW session
+    setLoadingSession(true);
+
+    setTableWithSession(qrTableNumber)
+      .catch((error: any) => {
+        console.error('BACKEND ERROR:', error?.response?.data);
+        toast.error(
+          error?.response?.data?.message || 'Failed to create session.'
+        );
+        navigate('/');
+      })
+      .finally(() => setLoadingSession(false));
+  }, [qrTableNumber, table, sessionToken]);
 
   const tax = totalPrice * 0.1;
   const total = totalPrice + tax;
@@ -188,15 +195,22 @@ export default function PaymentPage() {
         </h2>
         <div className="flex justify-between">
           <span>Subtotal</span>
-          <span className="font-bold">₱{totalPrice.toFixed(2)}</span>
+          <span className="font-bold">
+            ₱
+            {totalPrice.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+          </span>
         </div>
         <div className="flex justify-between">
           <span>Tax 10%</span>
-          <span className="font-bold">₱{tax.toFixed(2)}</span>
+          <span className="font-bold">
+            ₱{tax.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+          </span>
         </div>
         <div className="flex justify-between font-bold text-yellow-500 sm:text-lg">
           <span className="font-medium text-black">Total</span>
-          <span>₱{total.toFixed(2)}</span>
+          <span>
+            ₱{total.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+          </span>
         </div>
       </div>
 

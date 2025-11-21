@@ -167,7 +167,7 @@ export default function KitchenOrders() {
     <div className="flex gap-10">
       {/* Tables List */}
       <div className="w-1/2">
-        <h1 className="text-3xl font-bold mb-6">All Tables</h1>
+        <h1 className="mb-6 text-3xl font-bold">All Tables</h1>
 
         {combinedTables.length === 0 ? (
           <p className="text-gray-500">No tables found.</p>
@@ -183,7 +183,7 @@ export default function KitchenOrders() {
                     : 'bg-white hover:bg-gray-50'
                 }`}
               >
-                <span className="font-medium text-lg">
+                <span className="text-lg font-medium">
                   Table #{table.displayNumber}
                 </span>
                 <span
@@ -203,7 +203,7 @@ export default function KitchenOrders() {
                 </span>
 
                 {table.has_additional_order && (
-                  <span className="absolute top-1 right-1 h-3 w-3 rounded-full bg-red-600 animate-pulse" />
+                  <span className="absolute w-3 h-3 bg-red-600 rounded-full top-1 right-1 animate-pulse" />
                 )}
               </div>
             ))}
@@ -212,10 +212,10 @@ export default function KitchenOrders() {
       </div>
 
       {/* Table Orders */}
-      <div className="flex-1 py-4 px-2">
+      <div className="flex-1 px-2 py-4">
         {selectedTableId ? (
           <>
-            <h2 className="text-right text-lg font-medium mb-6">
+            <h2 className="mb-6 text-lg font-medium text-right">
               Table #:{' '}
               {combinedTables.find((t) => t.id === selectedTableId)
                 ?.table_number || '—'}
@@ -226,14 +226,14 @@ export default function KitchenOrders() {
                 {tableOrders.map((order, index) => (
                   <div
                     key={order.id}
-                    className="bg-gray-50 rounded-lg mb-8 px-4 shadow-sm border border-gray-200"
+                    className="px-4 mb-8 border border-gray-200 rounded-lg shadow-sm bg-gray-50"
                   >
                     <div className="flex items-center justify-between mb-3">
-                      <h3 className="font-semibold text-xl">
+                      <h3 className="text-xl font-semibold">
                         {index === 0
                           ? 'Main Order'
                           : `Additional Order #${index}`}
-                        <span className="text-gray-500 text-sm ml-2">
+                        <span className="ml-2 text-sm text-gray-500">
                           (
                           {new Date(order.created_at).toLocaleTimeString([], {
                             hour: '2-digit',
@@ -285,13 +285,13 @@ export default function KitchenOrders() {
                 ))}
               </div>
             ) : (
-              <p className="text-gray-500 text-center mt-10">
+              <p className="mt-10 text-center text-gray-500">
                 No active orders for this table.
               </p>
             )}
           </>
         ) : (
-          <p className="text-gray-500 text-center mt-10">
+          <p className="mt-10 text-center text-gray-500">
             Select a table to view orders.
           </p>
         )}

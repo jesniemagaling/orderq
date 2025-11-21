@@ -17,7 +17,14 @@ export default function CartItem({
         />
         <div className="grid gap-2">
           <h3 className="text-lg font-medium">{item.name}</h3>
-          <p className="font-bold text-yellow-500">₱ {item.price}</p>
+          <p className="font-bold text-yellow-500">
+            {' '}
+            ₱{' '}
+            {Number(item.price).toLocaleString(undefined, {
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 0,
+            })}
+          </p>
         </div>
       </div>
       <div className="flex flex-col items-end gap-2">

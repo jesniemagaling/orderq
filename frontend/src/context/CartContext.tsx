@@ -116,7 +116,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
   const setTableWithSession = async (tableId: number) => {
     try {
       const { data } = await api.post('/sessions', { table_number: tableId });
-      setTable(tableId);
+      console.log('SESSION RESPONSE:', data);
+      setTable(data.table_number);
       setSessionToken(data.token);
     } catch (error: any) {
       console.error('Error creating session:', error);

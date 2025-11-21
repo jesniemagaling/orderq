@@ -14,6 +14,7 @@ export default function FoodDetails() {
   const [quantity, setQuantity] = useState(1);
   const [imageSrc, setImageSrc] = useState('');
   const { addToCart, cartCount } = useCart();
+  const query = location.search;
   const navigate = useNavigate();
 
   const handleIncrease = () => setQuantity((q) => Math.min(q + 1, 99));
@@ -80,7 +81,7 @@ export default function FoodDetails() {
       <div className="flex items-center justify-between">
         <BackButton size={36} />
         <Link
-          to="/cart"
+          to={`/cart${query}`}
           className="flex items-center gap-1 px-2 py-2 bg-white rounded-full hover:opacity-80"
         >
           <div className="relative">
@@ -145,7 +146,7 @@ export default function FoodDetails() {
           <span className="text-lg font-medium text-black sm:text-xl">
             Price:{' '}
           </span>
-          ₱{food.price.toFixed(2)}
+          ₱{Math.floor(food.price)}
         </p>
 
         {food.status === 'in_stock' ? (
