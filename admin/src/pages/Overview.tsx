@@ -1,4 +1,3 @@
-// src/pages/Overview.tsx
 import { useEffect, useMemo, useState } from 'react';
 import { Bell, DollarSign, Users, Package } from 'lucide-react';
 import {
@@ -101,7 +100,10 @@ export default function Overview() {
         // Active Orders Count
         if (allOrdersRes.status === 'fulfilled') {
           const activeCount = allOrdersRes.value.data.filter(
-            (o: any) => o.status === 'in_progress' || o.status === 'pending'
+            (o: any) =>
+              o.status === 'pending' ||
+              o.status === 'in_progress' ||
+              o.status === 'unserved'
           ).length;
           setActiveOrdersCount(activeCount);
         } else {
@@ -267,59 +269,59 @@ export default function Overview() {
       <h1 className="text-3xl font-bold">Overview</h1>
 
       {/* KPI cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg p-5 shadow-sm flex items-center justify-between">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+        <div className="flex items-center justify-between p-5 bg-white rounded-lg shadow-sm">
           <div>
             <p className="text-sm text-gray-500">Occupancy</p>
             <p className="text-2xl font-semibold">{occupancyText}</p>
           </div>
-          <div className="bg-red-50 rounded-lg p-3">
+          <div className="p-3 rounded-lg bg-red-50">
             <Users size={28} className="text-red-500" />
           </div>
         </div>
 
-        <div className="bg-white rounded-lg p-5 shadow-sm flex items-center justify-between">
+        <div className="flex items-center justify-between p-5 bg-white rounded-lg shadow-sm">
           <div>
             <p className="text-sm text-gray-500">Active Orders</p>
             <p className="text-2xl font-semibold">{activeOrdersCount}</p>
           </div>
-          <div className="bg-yellow-50 rounded-lg p-3">
+          <div className="p-3 rounded-lg bg-yellow-50">
             <Bell size={28} className="text-yellow-600" />
           </div>
         </div>
 
-        <div className="bg-white rounded-lg p-5 shadow-sm flex items-center justify-between">
+        <div className="flex items-center justify-between p-5 bg-white rounded-lg shadow-sm">
           <div>
             <p className="text-sm text-gray-500">Today's Revenue</p>
             <p className="text-2xl font-semibold">
               {formatCurrency(todayRevenue)}
             </p>
           </div>
-          <div className="bg-green-50 rounded-lg p-3">
+          <div className="p-3 rounded-lg bg-green-50">
             <DollarSign size={28} className="text-green-500" />
           </div>
         </div>
 
-        <div className="bg-white rounded-lg p-5 shadow-sm flex items-center justify-between">
+        <div className="flex items-center justify-between p-5 bg-white rounded-lg shadow-sm">
           <div>
             <p className="text-sm text-gray-500">Low Stocks Menu</p>
             <p className="text-2xl font-semibold">{lowStocksCount}</p>
           </div>
-          <div className="bg-blue-50 rounded-lg p-3">
+          <div className="p-3 rounded-lg bg-blue-50">
             <Package size={28} className="text-blue-500" />
           </div>
         </div>
       </div>
 
       {/* Main content grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+      <div className="grid items-stretch grid-cols-1 gap-6 lg:grid-cols-3">
         {/* left: latest orders */}
-        <div className="lg:col-span-2 bg-white rounded-lg shadow-sm p-6 flex flex-col h-full">
-          <h2 className="text-lg font-semibold mb-4">Latest Orders</h2>
+        <div className="flex flex-col h-full p-6 bg-white rounded-lg shadow-sm lg:col-span-2">
+          <h2 className="mb-4 text-lg font-semibold">Latest Orders</h2>
 
-          <div className="overflow-y-auto flex-1">
+          <div className="flex-1 overflow-y-auto">
             <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-white border-b text-gray-600 text-xs font-medium">
+              <thead className="sticky top-0 text-xs font-medium text-gray-600 bg-white border-b">
                 <tr>
                   <th className="py-2 pl-3 text-left w-[15%]">Order#</th>
                   <th className="py-2 text-left w-[15%]">Time</th>
@@ -334,7 +336,7 @@ export default function Overview() {
                   latestOrders.map((o) => (
                     <tr
                       key={o.id}
-                      className="hover:bg-gray-50 transition-colors duration-150"
+                      className="transition-colors duration-150 hover:bg-gray-50"
                     >
                       <td className="py-3 pl-3 text-gray-700">{o.id}</td>
                       <td className="py-3 text-gray-600">
@@ -345,10 +347,10 @@ export default function Overview() {
                       <td className="py-3 text-left text-gray-700">
                         {o.table_number || o.table_id || '-'}
                       </td>
-                      <td className="py-3 pr-6 text-center font-medium text-gray-800">
+                      <td className="py-3 pr-6 font-medium text-center text-gray-800">
                         {formatCurrency(Number(o.total_amount || 0))}
                       </td>
-                      <td className="py-3 text-center pr-3">
+                      <td className="py-3 pr-3 text-center">
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-medium inline-block min-w-[75px] text-center ${
                             o.status === 'served'
@@ -369,7 +371,7 @@ export default function Overview() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={5} className="text-center py-6 text-gray-400">
+                    <td colSpan={5} className="py-6 text-center text-gray-400">
                       No recent orders available
                     </td>
                   </tr>
@@ -380,9 +382,9 @@ export default function Overview() {
         </div>
 
         {/* right column: charts & top sellers */}
-        <div className="flex flex-col space-y-6 h-full">
-          <div className="bg-white rounded-lg shadow-sm p-6 flex-1">
-            <div className="flex items-center gap-2 justify-between mb-4">
+        <div className="flex flex-col h-full space-y-6">
+          <div className="flex-1 p-6 bg-white rounded-lg shadow-sm">
+            <div className="flex items-center justify-between gap-2 mb-4">
               <h3 className="font-semibold">Sales Performance</h3>
               <select
                 value={salesInterval}
@@ -437,8 +439,8 @@ export default function Overview() {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm p-6 flex-1 overflow-y-auto">
-            <h3 className="font-semibold mb-4">Top selling items</h3>
+          <div className="flex-1 p-6 overflow-y-auto bg-white rounded-lg shadow-sm">
+            <h3 className="mb-4 font-semibold">Top selling items</h3>
             <ul className="space-y-3">
               {topSelling.map((t, i) => (
                 <li key={i} className="flex items-center justify-between">
