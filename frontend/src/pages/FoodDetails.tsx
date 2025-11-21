@@ -44,7 +44,9 @@ export default function FoodDetails() {
 
         setFood(mappedFood);
 
-        const baseImageUrl = baseUrl.replace('/api', '');
+        const baseImageUrl = baseUrl.endsWith('/api')
+          ? baseUrl.replace(/\/api$/, '')
+          : baseUrl;
         let cleanPath = (mappedFood.image_url || '').replace('/api', '').trim();
         const displayImage = cleanPath.startsWith('http')
           ? `${cleanPath}?t=${Date.now()}`

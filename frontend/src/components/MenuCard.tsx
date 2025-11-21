@@ -35,12 +35,11 @@ export default function MenuCard({ item, onAdd }: MenuListCardProps) {
     toast.success(`${item.name} added to cart!`);
   };
 
-  // Add cache-busting to image_url
-  const baseUrl = import.meta.env.VITE_API_URL || '';
+  const baseUrl = (import.meta.env.VITE_API_URL || '').replace(/\/api\/?$/, '');
   const displayImage = image_url
     ? image_url.startsWith('http')
       ? `${image_url}?t=${Date.now()}`
-      : `${import.meta.env.VITE_API_URL}${image_url}?t=${Date.now()}`
+      : `${baseUrl}/${image_url.replace(/^\/+/, '')}?t=${Date.now()}`
     : '/images/placeholder.png';
 
   return (
