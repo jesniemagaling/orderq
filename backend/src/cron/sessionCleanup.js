@@ -1,7 +1,7 @@
 // src/cron/sessionCleanup.js
 import cron from 'node-cron';
 import { db } from '../config/db.js';
-import { notifyTableStatus } from '../../index.js';
+import { notifyTableStatus, notifySessionUpdate } from '../../index.js';
 
 export function startSessionCleanup() {
   cron.schedule(
@@ -10,9 +10,9 @@ export function startSessionCleanup() {
       console.log('[SessionCleanup] Running cleanup job...');
 
       try {
-        // Mark expired sessions as inactive
-        const [expired] = await db.query(`
-          SELECT table_id FROM sessions
+        const [expiredSessions] = await db.query(`
+          SELECT id, table_id, token
+          FROM sessions
           WHERE expires_at < NOW() AND is_active = 1
         `);
 
@@ -22,7 +22,6 @@ export function startSessionCleanup() {
           WHERE expires_at < NOW() AND is_active = 1
         `);
 
-        // Free up tables that no longer have active sessions
         const [freedTables] = await db.query(`
           SELECT t.id
           FROM tables t
@@ -42,7 +41,14 @@ export function startSessionCleanup() {
           )
         `);
 
-        // Notify frontend for freed tables
+        for (const session of expiredSessions) {
+          notifySessionUpdate({
+            table_id: session.table_id,
+            token: session.token,
+            status: 'expired',
+          });
+        }
+
         for (const table of freedTables) {
           notifyTableStatus(table.id, 'available');
         }
