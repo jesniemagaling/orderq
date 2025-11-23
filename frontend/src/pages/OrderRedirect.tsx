@@ -12,7 +12,9 @@ export default function OrderRedirect() {
     const token = searchParams.get('token');
 
     if (table && token) {
-      navigate(`/menu?table=${table}&token=${token}`, { replace: true });
+      localStorage.setItem('sessionToken', token);
+      console.log('Token saved:', localStorage.getItem('sessionToken'));
+      navigate(`/menu?table=${table}`, { replace: true, state: { token } });
     } else {
       navigate('/session-expired', { replace: true });
     }

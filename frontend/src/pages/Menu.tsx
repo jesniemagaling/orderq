@@ -70,7 +70,7 @@ export default function Menu() {
       // Redirect after delay
       setTimeout(() => {
         navigate('/session-expired', { replace: true });
-      }, 1200);
+      }, 1600);
     };
 
     socket.on('sessionUpdate', handleSessionUpdate);

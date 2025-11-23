@@ -1,3 +1,4 @@
+import { useSessionGuard } from '@/hooks/useSessionGuard';
 import CartItem from '@/components/CartItem';
 import Nav from '@/components/Nav';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,7 @@ import { useCart } from '@/context/CartContext';
 import { toast } from 'react-toastify';
 import { MenuItem } from '@/types/menu';
 import { Separator } from '@/components/ui/separator';
+import { use } from 'react';
 
 export default function Cart() {
   const [searchParams] = useSearchParams();
@@ -21,6 +23,7 @@ export default function Cart() {
   } = useCart();
 
   const navigate = useNavigate();
+  useSessionGuard();
 
   const handleIncrease = (item: MenuItem) => {
     increaseQuantity(item);
@@ -95,14 +98,22 @@ export default function Cart() {
                 onClick={() => {
                   if (cart.length === 0) {
                     toast.error('Cart is empty!');
-                  } else {
-                    navigate(
-                      `/payment-method?table=${table}&token=${sessionToken}`
-                    );
+                    return;
                   }
+
+                  const token = localStorage.getItem('sessionToken');
+                  if (!token) {
+                    toast.error(
+                      'Session expired. Please scan the QR code again.'
+                    );
+                    navigate('/session-expired');
+                    return;
+                  }
+
+                  navigate(`/payment-method?table=${table}&token=${token}`);
                 }}
               >
-                Proceed to Pay
+                Proceed to Payment
               </Button>
             </div>
           </>

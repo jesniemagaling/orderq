@@ -11,23 +11,96 @@ import OrderStatus from './pages/OrderStatus';
 import Receipt from './pages/Receipt';
 import OrderRedirect from './pages/OrderRedirect';
 import SessionExpired from './pages/SessionExpired';
+import SessionGuard from './components/SessionGuard';
 
 function App() {
   return (
     <Router>
       <MainLayout>
         <Routes>
-          <Route path="/" element={<Home />} />
           <Route path="/order" element={<OrderRedirect />} />
-          <Route path="/search" element={<Search />} />
-          <Route path="/menu" element={<Menu />} />
-          <Route path="/menu/:id" element={<FoodDetails />} />
-          <Route path="/cart" element={<Cart />} />
-          <Route path="/orders" element={<Orders />} />
-          <Route path="/payment-method" element={<PaymentMethod />} />
-          <Route path="/order-status/:orderId" element={<OrderStatus />} />
-          <Route path="/receipt/:orderId" element={<Receipt />} />
           <Route path="/session-expired" element={<SessionExpired />} />
+
+          <Route
+            path="/"
+            element={
+              <SessionGuard>
+                <Home />
+              </SessionGuard>
+            }
+          />
+
+          <Route
+            path="/search"
+            element={
+              <SessionGuard>
+                <Search />
+              </SessionGuard>
+            }
+          />
+
+          <Route
+            path="/menu"
+            element={
+              <SessionGuard>
+                <Menu />
+              </SessionGuard>
+            }
+          />
+
+          <Route
+            path="/menu/:id"
+            element={
+              <SessionGuard>
+                <FoodDetails />
+              </SessionGuard>
+            }
+          />
+
+          <Route
+            path="/cart"
+            element={
+              <SessionGuard>
+                <Cart />
+              </SessionGuard>
+            }
+          />
+
+          <Route
+            path="/orders"
+            element={
+              <SessionGuard>
+                <Orders />
+              </SessionGuard>
+            }
+          />
+
+          <Route
+            path="/payment-method"
+            element={
+              <SessionGuard>
+                <PaymentMethod />
+              </SessionGuard>
+            }
+          />
+
+          <Route
+            path="/order-status/:orderId"
+            element={
+              <SessionGuard>
+                <OrderStatus />
+              </SessionGuard>
+            }
+          />
+
+          <Route
+            path="/receipt/:orderId"
+            element={
+              <SessionGuard>
+                <Receipt />
+              </SessionGuard>
+            }
+          />
         </Routes>
       </MainLayout>
     </Router>

@@ -164,7 +164,7 @@ export const endSession = async (req, res) => {
       [session.table_id]
     );
 
-    // Notify staff dashboard about table status change
+    // Notify cashier dashboard about table status change
     notifyTableStatus(session.table_id, 'available');
 
     await connection.commit();

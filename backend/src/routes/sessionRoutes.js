@@ -10,7 +10,7 @@ const router = express.Router();
 
 router.get('/scan/:table_number', scanSessionFromQR);
 router.post('/', createSession);
-router.get('/:token', verifySession);
+router.get('/verify/:token', verifySession);
 router.post('/end/:token', endSession);
 
 export default router;

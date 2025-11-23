@@ -1,5 +1,6 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { MenuItem } from '@/types/menu';
 import BackButton from '@/components/BackButton';
 import { Button } from '@/components/ui/button';
@@ -7,8 +8,12 @@ import { toast } from 'react-toastify';
 import { useCart } from '@/context/CartContext';
 import { Plus, Minus } from 'lucide-react';
 import api from '@/lib/axios';
+import { socket } from '@/lib/socket';
 
 export default function FoodDetails() {
+  const [searchParams] = useSearchParams();
+  const table = searchParams.get('table');
+  const sessionToken = searchParams.get('token');
   const { id } = useParams<{ id: string }>();
   const [food, setFood] = useState<MenuItem | null>(null);
   const [quantity, setQuantity] = useState(1);
@@ -63,6 +68,35 @@ export default function FoodDetails() {
 
     fetchFood();
   }, [id, baseUrl]);
+
+  useEffect(() => {
+    if (!sessionToken) return; // Wait until token is known
+
+    const handleSessionUpdate = (data: any) => {
+      // Only process expiration events
+      if (data.status !== 'expired') return;
+
+      // Must match THIS user's session token
+      if (!data.token || data.token !== sessionToken) return;
+
+      toast.error('Your session has expired. Redirecting...');
+
+      // Clear session token
+      localStorage.removeItem('sessionToken');
+      delete api.defaults.headers.common['Authorization'];
+
+      // Redirect after delay
+      setTimeout(() => {
+        navigate('/session-expired', { replace: true });
+      }, 1600);
+    };
+
+    socket.on('sessionUpdate', handleSessionUpdate);
+
+    return () => {
+      socket.off('sessionUpdate', handleSessionUpdate);
+    };
+  }, [sessionToken, navigate]);
 
   const handleAddToCart = () => {
     if (!food) return;
