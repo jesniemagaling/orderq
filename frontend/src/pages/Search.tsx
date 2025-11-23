@@ -5,6 +5,7 @@ import { MenuItem } from '@/types/menu';
 import MenuCard from '@/components/MenuCard';
 import { useCart } from '@/context/CartContext';
 import api from '@/lib/axios';
+import { useSessionGuard } from '@/hooks/useSessionGuard';
 
 export default function Search() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -13,6 +14,8 @@ export default function Search() {
 
   const baseUrl = import.meta.env.VITE_API_URL || '';
   const baseImageUrl = baseUrl.replace('/api', '');
+
+  useSessionGuard();
 
   // Fetch menu items
   useEffect(() => {

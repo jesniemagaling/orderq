@@ -9,6 +9,7 @@ import {
 import BackButton from '@/components/BackButton';
 import api from '@/lib/axios';
 import { socket } from '@/lib/socket';
+import { useSessionGuard } from '@/hooks/useSessionGuard';
 
 const statusSteps = [
   { title: 'Order Pending', desc: 'Your order has been placed' },
@@ -44,6 +45,8 @@ export default function TrackOrder() {
   const [searchParams] = useSearchParams();
   const sessionToken = searchParams.get('token');
   const table = searchParams.get('table');
+
+  useSessionGuard();
 
   // Fetch order initially
   useEffect(() => {

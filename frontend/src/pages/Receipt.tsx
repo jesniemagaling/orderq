@@ -3,6 +3,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import BackButton from '@/components/BackButton';
 import api from '@/lib/axios';
+import { useSessionGuard } from '@/hooks/useSessionGuard';
 
 export default function Receipt() {
   const storeInfo = {
@@ -19,6 +20,8 @@ export default function Receipt() {
   const [order, setOrder] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  useSessionGuard();
 
   useEffect(() => {
     if (!orderId || !sessionToken) return;

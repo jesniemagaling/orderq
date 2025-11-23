@@ -10,6 +10,7 @@ import { useCart } from '@/context/CartContext';
 import { toast } from 'react-toastify';
 import { MenuItem } from '@/types/menu';
 import api from '@/lib/axios';
+import { useSessionGuard } from '@/hooks/useSessionGuard';
 
 interface PaymentMethod {
   id: string;
@@ -78,6 +79,8 @@ export default function PaymentPage() {
   const [loadingSession, setLoadingSession] = useState(false);
 
   const qrTableNumber = Number(searchParams.get('table'));
+
+  useSessionGuard();
 
   useEffect(() => {
     if (!qrTableNumber) {

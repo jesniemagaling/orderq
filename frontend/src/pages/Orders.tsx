@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import Nav from '@/components/Nav';
 import { useCart } from '@/context/CartContext';
 import api from '@/lib/axios';
+import { useSessionGuard } from '@/hooks/useSessionGuard';
 interface OrderItem {
   name: string;
   quantity: number;
@@ -26,6 +27,8 @@ export default function Orders() {
   const { sessionToken } = useCart();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+
+  useSessionGuard();
 
   useEffect(() => {
     if (!sessionToken) return;
