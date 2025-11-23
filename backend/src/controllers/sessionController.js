@@ -148,6 +148,7 @@ export const endSession = async (req, res) => {
 
     const session = sessions[0];
 
+    // End the session immediately
     await connection.query(
       `UPDATE sessions 
         SET is_active = 0, expires_at = NOW()
@@ -155,6 +156,7 @@ export const endSession = async (req, res) => {
       [session.id]
     );
 
+    // Mark table back to available
     await connection.query(
       `UPDATE tables 
         SET status = 'available'
@@ -162,9 +164,18 @@ export const endSession = async (req, res) => {
       [session.table_id]
     );
 
+    // Notify staff dashboard about table status change
     notifyTableStatus(session.table_id, 'available');
 
     await connection.commit();
+
+    // Notify customer app that their session ended
+    notifySessionUpdate({
+      table_id: session.table_id,
+      token,
+      status: 'expired',
+      manually_ended: true,
+    });
 
     return res.status(200).json({
       message: `Session for Table #${session.table_id} has been ended.`,

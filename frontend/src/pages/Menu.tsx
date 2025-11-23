@@ -7,10 +7,14 @@ import CategoryList from '@/components/CategoryList';
 import { useMenu } from '@/hooks/useMenu';
 import { useCategories } from '@/hooks/useCategories';
 import { useCart } from '@/context/CartContext';
+import { socket } from '@/lib/socket';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import api from '@/lib/axios';
 
 export default function Menu() {
   const location = useLocation();
+  const navigate = useNavigate();
   const searchParams = new URLSearchParams(location.search);
 
   const table = searchParams.get('table');
@@ -46,6 +50,35 @@ export default function Menu() {
   useEffect(() => {
     setSearchTerm(searchQuery);
   }, [searchQuery]);
+
+  useEffect(() => {
+    if (!sessionToken) return; // Wait until token is known
+
+    const handleSessionUpdate = (data: any) => {
+      // Only process expiration events
+      if (data.status !== 'expired') return;
+
+      // Must match THIS user's session token
+      if (!data.token || data.token !== sessionToken) return;
+
+      toast.error('Your session has expired. Redirecting...');
+
+      // Clear session token
+      localStorage.removeItem('sessionToken');
+      delete api.defaults.headers.common['Authorization'];
+
+      // Redirect after delay
+      setTimeout(() => {
+        navigate('/session-expired', { replace: true });
+      }, 1200);
+    };
+
+    socket.on('sessionUpdate', handleSessionUpdate);
+
+    return () => {
+      socket.off('sessionUpdate', handleSessionUpdate);
+    };
+  }, [sessionToken, navigate]);
 
   // Filter menu items by search term & category
   const filteredItems = menuItems.filter((item) => {

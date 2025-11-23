@@ -8,14 +8,7 @@ import {
 } from 'react-router-dom';
 import BackButton from '@/components/BackButton';
 import api from '@/lib/axios';
-import { io, Socket } from 'socket.io-client';
-
-// WebSocket connection
-const socket: Socket = io('http://localhost:5000', {
-  transports: ['websocket'], // ensures stable connection
-  reconnectionAttempts: 5,
-  reconnectionDelay: 2000,
-});
+import { socket } from '@/lib/socket';
 
 const statusSteps = [
   { title: 'Order Pending', desc: 'Your order has been placed' },
@@ -86,41 +79,36 @@ export default function TrackOrder() {
     fetchOrder();
   }, [orderId, sessionToken]);
 
-  // Subscribe to WebSocket updates
+  // Listen for real-time updates
   useEffect(() => {
     if (!orderId) return;
 
-    const handleOrderUpdate = (data: {
-      orderId: number;
-      status: string;
-      total_amount?: number;
-      items?: OrderItem[];
-    }) => {
-      if (data.orderId.toString() === orderId && order) {
-        setOrder((prev) => {
-          if (!prev) return prev;
+    const handleTableStatusUpdate = (data: any) => {
+      console.log('[Socket] Received tableStatusUpdate:', data);
 
-          return {
-            ...prev,
-            status: data.status,
-            total_amount:
-              data.total_amount !== undefined
-                ? Number(data.total_amount)
-                : prev.total_amount,
-            items: data.items
-              ? data.items.map((i) => ({ ...i, price: Number(i.price) }))
-              : prev.items,
-          };
-        });
-      }
+      const updates = Array.isArray(data) ? data : [data];
+
+      setOrder((prev) => {
+        if (!prev) return prev;
+
+        const update = updates.find((d) => d.tableId === prev.table_id);
+        if (!update) return prev;
+
+        console.log('[Socket] Updating order status to', update.status);
+        return {
+          ...prev,
+          status: update.status || update.new_status,
+        };
+      });
     };
 
-    socket.on('orderUpdate', handleOrderUpdate);
+    socket.on('tableStatusUpdate', handleTableStatusUpdate);
 
     return () => {
-      socket.off('orderUpdate', handleOrderUpdate);
+      console.log('[Socket] Removing tableStatusUpdate listener');
+      socket.off('tableStatusUpdate', handleTableStatusUpdate);
     };
-  }, [orderId, order]);
+  }, [orderId]);
 
   if (loading) return <p className="mt-6 text-center">Loading order...</p>;
   if (error) return <p className="mt-6 text-center text-red-500">{error}</p>;
@@ -131,6 +119,7 @@ export default function TrackOrder() {
       case 'pending':
         return 0;
       case 'unserved':
+      case 'in_progress':
         return 1;
       case 'served':
         return 2;
@@ -138,6 +127,13 @@ export default function TrackOrder() {
         return 0;
     }
   })();
+
+  console.log(
+    '[TrackOrder] Computed step:',
+    currentStep,
+    'from status:',
+    order?.status
+  );
 
   return (
     <div className="space-y-12">

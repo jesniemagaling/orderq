@@ -10,6 +10,7 @@ import PaymentMethod from './pages/PaymentMethod';
 import OrderStatus from './pages/OrderStatus';
 import Receipt from './pages/Receipt';
 import OrderRedirect from './pages/OrderRedirect';
+import SessionExpired from './pages/SessionExpired';
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
           <Route path="/payment-method" element={<PaymentMethod />} />
           <Route path="/order-status/:orderId" element={<OrderStatus />} />
           <Route path="/receipt/:orderId" element={<Receipt />} />
+          <Route path="/session-expired" element={<SessionExpired />} />
         </Routes>
       </MainLayout>
     </Router>
