@@ -63,9 +63,9 @@ CREATE TABLE IF NOT EXISTS orders (
   session_id INT NOT NULL,
   table_id INT NOT NULL,
   status ENUM('pending', 'unserved', 'served', 'cancelled') DEFAULT 'pending',
-  payment_method ENUM('cash', 'online') DEFAULT 'cash',
-  payment_status ENUM('unpaid', 'paid') DEFAULT 'unpaid',
-  total_amount DECIMAL(10,2),
+  payment_method ENUM('cash','gcash','paypal') DEFAULT 'cash',
+  payment_status ENUM('unpaid','paid','failed') DEFAULT 'unpaid',
+  total_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE,
@@ -78,7 +78,7 @@ CREATE TABLE IF NOT EXISTS order_items (
   order_id INT NOT NULL,
   menu_id INT NOT NULL,
   quantity INT DEFAULT 1,
-  price DECIMAL(10,2),
+  price DECIMAL(10,2) NOT NULL,
   subtotal DECIMAL(10,2) GENERATED ALWAYS AS (quantity * price) STORED,
   PRIMARY KEY (id),
   FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
@@ -100,3 +100,16 @@ INSERT INTO users (username, email, password, role) VALUES
 ('admin', 'admin@orderq.com', 'admin123', 'admin'),
 ('cashier1', 'cashier@orderq.com', 'cashier123', 'cashier'),
 ('kitchen1', 'kitchen@orderq.com', 'kitchen123', 'kitchen');
+
+-- PAYMENTS TABLE (for secure online payment tracking)
+CREATE TABLE IF NOT EXISTS payments (
+    id INT NOT NULL AUTO_INCREMENT,
+    order_id INT NOT NULL,
+    payment_method ENUM('cash','gcash','paypal') NOT NULL,
+    payment_reference VARCHAR(255),
+    amount DECIMAL(10,2) NOT NULL,
+    status ENUM('pending','completed','failed') DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

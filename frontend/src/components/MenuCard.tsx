@@ -19,10 +19,11 @@ export default function MenuCard({ item, onAdd }: MenuListCardProps) {
 
   // Build link with table & token if available
   const buildLink = () => {
-    if (table && token) {
-      return `/menu/${id}?table=${table}&token=${token}`;
-    }
-    return `/menu/${id}`;
+    const params = new URLSearchParams();
+    if (table) params.set('table', table);
+    if (token) params.set('token', token);
+    const query = params.toString();
+    return query ? `/menu/${id}?${query}` : `/menu/${id}`;
   };
 
   // Handle adding to cart

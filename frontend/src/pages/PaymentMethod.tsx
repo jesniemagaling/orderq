@@ -21,40 +21,16 @@ interface PaymentMethod {
 
 const paymentMethods: PaymentMethod[] = [
   {
-    id: 'gpay',
-    name: 'Google Pay',
-    description: '',
-    icon: (
-      <img
-        src="/icons/google-pay.png"
-        alt="Google Pay"
-        className="h-12 sm:h-14"
-      />
-    ),
-  },
-  {
-    id: 'applepay',
-    name: 'Apple Pay',
-    description: '',
-    icon: (
-      <img
-        src="/icons/apple-pay.png"
-        alt="Apple Pay"
-        className="h-12 sm:h-14"
-      />
-    ),
-  },
-  {
-    id: 'visa',
-    name: 'Credit Card',
-    description: '',
-    icon: <img src="/icons/visa.png" alt="Visa" className="h-12 sm:h-14" />,
-  },
-  {
     id: 'paypal',
     name: 'PayPal',
     description: '',
     icon: <img src="/icons/paypal.png" alt="Paypal" className="h-8 sm:h-10" />,
+  },
+  {
+    id: 'gcash',
+    name: 'GCASH',
+    description: '',
+    icon: <img src="/icons/visa.png" alt="Visa" className="h-12 sm:h-14" />,
   },
   {
     id: 'cash',

@@ -10,10 +10,11 @@ export default function BottomNavbar() {
 
   // Function to build link with optional query params
   const buildLink = (path: string) => {
-    if (table && token) {
-      return `${path}?table=${table}&token=${token}`;
-    }
-    return path;
+    const params = new URLSearchParams();
+    if (table) params.set('table', table);
+    if (token) params.set('token', token);
+    const query = params.toString();
+    return query ? `${path}?${query}` : path;
   };
 
   const navItems = [

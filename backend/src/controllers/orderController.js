@@ -7,7 +7,8 @@ import {
 
 // Create a new order
 export const createOrder = async (req, res) => {
-  const { table_id, session_token, items, payment_method } = req.body;
+  const { table_id, session_token, items, payment_method, payment_reference } =
+    req.body;
 
   if (!table_id || !session_token || !items || items.length === 0) {
     return res.status(400).json({ message: 'Missing order details' });
@@ -37,7 +38,7 @@ export const createOrder = async (req, res) => {
       0
     );
 
-    // Insert new order — status = 'unserved' by default
+    // Insert new order — status = 'pending' by default
     const [orderResult] = await connection.query(
       `INSERT INTO orders (table_id, session_id, status, payment_method, payment_status, total_amount)
         VALUES (?, ?, 'pending', ?, ?, ?)`,
@@ -45,14 +46,14 @@ export const createOrder = async (req, res) => {
         table_id,
         session_id,
         payment_method,
-        payment_method === 'online' ? 'paid' : 'unpaid',
+        payment_method === 'cash' ? 'unpaid' : 'pending', // For cash unpaid, for online pending until payment confirmed
         total_amount,
       ]
     );
 
     const orderId = orderResult.insertId;
 
-    // Insert order items and update stocks
+    // Insert order items and update stocks (your existing code here)
     for (const item of items) {
       await connection.query(
         `INSERT INTO order_items (order_id, menu_id, quantity, price)
@@ -77,6 +78,28 @@ export const createOrder = async (req, res) => {
         type: 'update',
         item: updatedMenuItem[0],
       });
+    }
+
+    // Insert into payments table for online payments
+    if (payment_method === 'gcash' || payment_method === 'paypal') {
+      await connection.query(
+        `INSERT INTO payments (order_id, payment_method, payment_reference, amount, status)
+          VALUES (?, ?, ?, ?, ?)`,
+        [
+          orderId,
+          payment_method,
+          payment_reference || null,
+          total_amount,
+          'pending',
+        ]
+      );
+    } else if (payment_method === 'cash') {
+      // For cash, no external payment_reference needed, mark payment as unpaid by default
+      await connection.query(
+        `INSERT INTO payments (order_id, payment_method, amount, status)
+          VALUES (?, 'cash', ?, 'pending')`,
+        [orderId, total_amount]
+      );
     }
 
     await connection.commit();

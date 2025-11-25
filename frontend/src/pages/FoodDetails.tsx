@@ -19,7 +19,7 @@ export default function FoodDetails() {
   const [quantity, setQuantity] = useState(1);
   const [imageSrc, setImageSrc] = useState('');
   const { addToCart, cartCount } = useCart();
-  const query = location.search;
+  const query = searchParams.toString() ? `?${searchParams.toString()}` : '';
   const navigate = useNavigate();
 
   const handleIncrease = () => setQuantity((q) => Math.min(q + 1, 99));
