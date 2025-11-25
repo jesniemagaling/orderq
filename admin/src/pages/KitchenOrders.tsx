@@ -1,13 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { adminSocket } from '../lib/socket';
 import api from '../lib/axios';
 import Button from '../components/ui/Button';
-
-const socket: Socket = io('http://localhost:5000', {
-  transports: ['websocket'],
-  reconnectionAttempts: 5,
-  reconnectionDelay: 2000,
-});
 
 interface OrderItem {
   name: string;
@@ -90,7 +84,7 @@ export default function KitchenOrders() {
     };
     init();
 
-    socket.on('newOrder', async ({ tableId, confirmed }) => {
+    adminSocket.on('newOrder', async ({ tableId, confirmed }) => {
       if (!confirmed) return;
 
       setTablesWithNotif((prev) =>
@@ -106,7 +100,7 @@ export default function KitchenOrders() {
       }
     });
 
-    socket.on('tableStatusUpdate', async ({ tableId, status }) => {
+    adminSocket.on('tableStatusUpdate', async ({ tableId, status }) => {
       await fetchOrders();
       await fetchTables();
 
@@ -116,8 +110,8 @@ export default function KitchenOrders() {
     });
 
     return () => {
-      socket.off('newOrder');
-      socket.off('tableStatusUpdate');
+      adminSocket.off('newOrder');
+      adminSocket.off('tableStatusUpdate');
     };
   }, [selectedTableId]);
 

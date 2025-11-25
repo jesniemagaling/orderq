@@ -1,13 +1,11 @@
 import { useEffect, useState } from 'react';
 import api from '../lib/axios';
-import io from 'socket.io-client';
+import { adminSocket } from '../lib/socket';
 import { PlusCircle, Edit, Trash2 } from 'lucide-react';
 import Button from '../components/ui/Button';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import EditMenu from '../components/EditMenu';
 import { toast } from 'react-toastify';
-
-const socket = io(import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000');
 
 interface MenuItem {
   id: number;
@@ -64,7 +62,7 @@ export default function Menu() {
     fetchMenu();
 
     // for real-time menu updates
-    socket.on('menuUpdated', (data) => {
+    adminSocket.on('menuUpdated', (data) => {
       console.log('[Menu] Real-time menu update:', data);
 
       if (data.type === 'update') {
@@ -81,7 +79,7 @@ export default function Menu() {
     });
 
     return () => {
-      socket.off('menuUpdated');
+      adminSocket.off('menuUpdated');
     };
   }, []);
 
@@ -112,12 +110,12 @@ export default function Menu() {
 
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between mb-8 gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Menu</h1>
 
         <div className="flex flex-wrap items-center gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block mb-2 text-sm font-medium text-gray-700">
               Category
             </label>
             <select
@@ -134,7 +132,7 @@ export default function Menu() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block mb-2 text-sm font-medium text-gray-700">
               Stock Status
             </label>
             <select
@@ -190,13 +188,13 @@ export default function Menu() {
                     <th className="p-2 font-semibold text-gray-700">
                       Description
                     </th>
-                    <th className="p-2 font-semibold text-gray-700 text-center">
+                    <th className="p-2 font-semibold text-center text-gray-700">
                       Stocks
                     </th>
-                    <th className="p-2 font-semibold text-gray-700 text-center">
+                    <th className="p-2 font-semibold text-center text-gray-700">
                       Price
                     </th>
-                    <th className="p-2 font-semibold text-gray-700 text-center">
+                    <th className="p-2 font-semibold text-center text-gray-700">
                       Action
                     </th>
                   </tr>
@@ -206,7 +204,7 @@ export default function Menu() {
                     <tr>
                       <td
                         colSpan={8}
-                        className="text-center text-gray-500 py-6"
+                        className="py-6 text-center text-gray-500"
                       >
                         No menu items found for selected filters.
                       </td>
@@ -215,7 +213,7 @@ export default function Menu() {
                     filteredMenu.map((item) => (
                       <tr
                         key={item.id}
-                        className="border-b hover:bg-gray-50 transition"
+                        className="transition border-b hover:bg-gray-50"
                       >
                         <td className="p-2 text-gray-700">
                           #{item.id.toString().padStart(6, '0')}
@@ -237,7 +235,7 @@ export default function Menu() {
                         <td className="p-2 text-gray-800">
                           {item.category || '—'}
                         </td>
-                        <td className="p-2 text-gray-500 truncate max-w-xs">
+                        <td className="max-w-xs p-2 text-gray-500 truncate">
                           {item.description || '—'}
                         </td>
                         <td className="p-2 text-center text-gray-700">
@@ -246,15 +244,15 @@ export default function Menu() {
                         <td className="p-2 text-center text-gray-700">
                           {formatPrice(item.price)}
                         </td>
-                        <td className="p-2 text-center space-x-3">
+                        <td className="p-2 space-x-3 text-center">
                           <button
-                            className="text-green-600 hover:text-green-800 font-medium inline-flex items-center gap-1"
+                            className="inline-flex items-center gap-1 font-medium text-green-600 hover:text-green-800"
                             onClick={() => openEditModal(item.id)}
                           >
                             <Edit size={16} /> Edit
                           </button>
                           <button
-                            className="text-red-600 hover:text-red-800 font-medium inline-flex items-center gap-1"
+                            className="inline-flex items-center gap-1 font-medium text-red-600 hover:text-red-800"
                             onClick={() => handleDelete(item.id, item.name)}
                           >
                             <Trash2 size={16} /> Delete

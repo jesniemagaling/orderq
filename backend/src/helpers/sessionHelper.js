@@ -1,10 +1,12 @@
+// src/helpers/sessionHelper.js
 import { db } from '../config/db.js';
 import crypto from 'crypto';
 import { notifyTableStatus, notifySessionUpdate } from '../../index.js';
 
-export const getOrCreateSession = async (table_number) => {
-  const connection = await db.getConnection();
+export const createOrReuseSession = async (table_number) => {
+  if (!table_number) throw new Error('table_number is required');
 
+  const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
 
@@ -20,22 +22,30 @@ export const getOrCreateSession = async (table_number) => {
 
     const table = tables[0];
 
-    // Check for active session
     const [activeSession] = await connection.query(
-      'SELECT * FROM sessions WHERE table_id = ? AND is_active = 1 AND expires_at > NOW() LIMIT 1',
+      `SELECT * FROM sessions 
+       WHERE table_id = ? AND is_active = 1 AND expires_at > NOW() LIMIT 1`,
       [table.id]
     );
 
     if (activeSession.length > 0) {
       await connection.commit();
-      return { reused: true, ...activeSession[0], table };
+
+      notifySessionUpdate({
+        table_id: table.id,
+        table_number: table.table_number,
+        status: 'active',
+        reused: true,
+      });
+
+      return activeSession[0];
     }
 
-    // Create new session
     const token = crypto.randomBytes(24).toString('hex');
 
     await connection.query(
-      'INSERT INTO sessions (table_id, token, created_at, expires_at, is_active) VALUES (?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 2 HOUR), 1)',
+      `INSERT INTO sessions (table_id, token, created_at, expires_at, is_active)
+       VALUES (?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 2 HOUR), 1)`,
       [table.id, token]
     );
 
@@ -56,12 +66,7 @@ export const getOrCreateSession = async (table_number) => {
       status: 'created',
     });
 
-    return {
-      reused: false,
-      token,
-      table,
-      expires_at: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
-    };
+    return { table_id: table.id, table_number: table.table_number, token };
   } catch (err) {
     await connection.rollback();
     throw err;

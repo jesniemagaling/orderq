@@ -8,12 +8,14 @@ import { useCart } from '@/context/CartContext';
 import { toast } from 'react-toastify';
 import { MenuItem } from '@/types/menu';
 import { Separator } from '@/components/ui/separator';
-import { use } from 'react';
 
 export default function Cart() {
   const [searchParams] = useSearchParams();
   const table = searchParams.get('table');
-  const sessionToken = searchParams.get('token');
+  // fallback to localStorage if token is missing in URL
+  const sessionToken =
+    searchParams.get('token') || localStorage.getItem('sessionToken');
+
   const {
     cart,
     removeFromCart,
@@ -101,8 +103,7 @@ export default function Cart() {
                     return;
                   }
 
-                  const token = localStorage.getItem('sessionToken');
-                  if (!token) {
+                  if (!sessionToken) {
                     toast.error(
                       'Session expired. Please scan the QR code again.'
                     );
@@ -110,7 +111,12 @@ export default function Cart() {
                     return;
                   }
 
-                  navigate(`/payment-method?table=${table}&token=${token}`);
+                  // Save token to localStorage for future use
+                  localStorage.setItem('sessionToken', sessionToken);
+
+                  navigate(
+                    `/payment-method?table=${table}&token=${sessionToken}`
+                  );
                 }}
               >
                 Proceed to Payment

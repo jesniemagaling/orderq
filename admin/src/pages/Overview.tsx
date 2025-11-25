@@ -12,7 +12,7 @@ import {
 import { format } from 'date-fns';
 import api from '../lib/axios';
 import { toast } from 'react-toastify';
-import io from 'socket.io-client';
+import { adminSocket } from '../lib/socket';
 
 type Order = {
   id: number;
@@ -25,8 +25,6 @@ type Order = {
 };
 
 type TopItem = { name: string; sold: number; delta?: number };
-
-const socket = io(import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000');
 
 export default function Overview() {
   const [loading, setLoading] = useState(true);
@@ -233,12 +231,12 @@ export default function Overview() {
     };
 
     // Socket Realtime Updates
-    socket.on('connect', () =>
-      console.log('[Overview] Connected to socket:', socket.id)
+    adminSocket.on('connect', () =>
+      console.log('[Overview] Connected to socket:', adminSocket.id)
     );
-    socket.on('tableStatusUpdate', refreshDashboard);
-    socket.on('newOrder', refreshDashboard);
-    socket.on('disconnect', () =>
+    adminSocket.on('tableStatusUpdate', refreshDashboard);
+    adminSocket.on('newOrder', refreshDashboard);
+    adminSocket.on('disconnect', () =>
       console.log('[Overview] Disconnected from socket')
     );
 
@@ -247,8 +245,8 @@ export default function Overview() {
 
     // Cleanup
     return () => {
-      socket.off('tableStatusUpdate', refreshDashboard);
-      socket.off('newOrder', refreshDashboard);
+      adminSocket.off('tableStatusUpdate', refreshDashboard);
+      adminSocket.off('newOrder', refreshDashboard);
     };
   }, [salesInterval]);
 

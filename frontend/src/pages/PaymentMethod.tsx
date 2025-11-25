@@ -218,8 +218,13 @@ export default function PaymentPage() {
       </div>
 
       <div className="grid gap-4 place-items-center">
-        <Button onClick={handleConfirm} variant="default" className="py-6">
-          Confirm
+        <Button
+          onClick={handleConfirm}
+          variant="default"
+          className="py-6"
+          disabled={loadingSession || !sessionToken || !table}
+        >
+          {loadingSession ? 'Creating session...' : 'Confirm'}
         </Button>
         <Button variant="link" onClick={() => navigate('/cart')}>
           Back to Cart

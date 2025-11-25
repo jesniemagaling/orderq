@@ -1,15 +1,9 @@
 import { useEffect, useState } from 'react';
-import { io, Socket } from 'socket.io-client';
 import api from '../lib/axios';
 import Button from '../components/ui/Button';
 import Modal from '../components/ui/Modal';
 import { debounce } from 'lodash';
-
-const socket: Socket = io('http://localhost:5000', {
-  transports: ['websocket'], // ensures stable connection
-  reconnectionAttempts: 5,
-  reconnectionDelay: 2000,
-});
+import { adminSocket as socket } from '../lib/socket';
 
 interface OrderItem {
   name: string;
