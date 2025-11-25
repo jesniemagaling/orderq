@@ -40,8 +40,14 @@ const paymentMethods: PaymentMethod[] = [
   },
 ];
 
+declare global {
+  interface Window {
+    paypal: any;
+  }
+}
+
 export default function PaymentPage() {
-  const [selectedMethod, setSelectedMethod] = useState('applepay');
+  const [selectedMethod, setSelectedMethod] = useState('cash');
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const {
@@ -55,7 +61,6 @@ export default function PaymentPage() {
   const [loadingSession, setLoadingSession] = useState(false);
 
   const qrTableNumber = Number(searchParams.get('table'));
-
   useSessionGuard();
 
   useEffect(() => {
@@ -65,12 +70,9 @@ export default function PaymentPage() {
       return;
     }
 
-    // Case 1: Same table as saved → just continue
     if (table === qrTableNumber && sessionToken) return;
 
-    // Case 2: Different table → request NEW session
     setLoadingSession(true);
-
     setTableWithSession(qrTableNumber)
       .catch((error: any) => {
         console.error('BACKEND ERROR:', error?.response?.data);
@@ -85,6 +87,52 @@ export default function PaymentPage() {
   const tax = totalPrice * 0.1;
   const total = totalPrice + tax;
 
+  // PayPal integration
+  useEffect(() => {
+    if (selectedMethod !== 'paypal') return;
+    if (!window.paypal) return;
+
+    window.paypal
+      .Buttons({
+        style: {
+          layout: 'vertical',
+          color: 'blue',
+          shape: 'rect',
+          label: 'paypal',
+          height: 40,
+          tagline: false,
+          borderRadius: 12,
+        },
+
+        onApprove: async (_data: any, actions: any) => {
+          const details = await actions.order.capture();
+          console.log('PayPal payment approved:', details);
+
+          await api.post('/orders', {
+            table_id: table,
+            session_token: sessionToken,
+            items: cart.map((i: MenuItem & { quantity: number }) => ({
+              menu_id: i.id,
+              quantity: i.quantity,
+              price: i.price,
+            })),
+            payment_method: 'paypal',
+            paypal_order_id: details.id,
+            payment_reference: details.id,
+          });
+
+          toast.success('Payment completed via PayPal!');
+          clearCart();
+          navigate(`/orders?table=${table}&token=${sessionToken}`);
+        },
+        onError: (err: any) => {
+          console.error('PayPal payment error:', err);
+          toast.error('PayPal payment failed.');
+        },
+      })
+      .render('#paypal-button-container');
+  }, [selectedMethod, total, table, sessionToken, cart, clearCart, navigate]);
+
   const handleConfirm = async () => {
     if (!cart.length) {
       toast.error('Your cart is empty!');
@@ -96,13 +144,14 @@ export default function PaymentPage() {
       return;
     }
 
-    try {
-      const onlineMethods = ['gpay', 'applepay', 'visa', 'paypal'];
-      const payment_status = onlineMethods.includes(selectedMethod)
-        ? 'paid'
-        : 'unpaid';
+    if (selectedMethod === 'paypal') return;
 
-      const payload = {
+    try {
+      const payment_status =
+        selectedMethod === 'cash' || selectedMethod === 'gcash'
+          ? 'unpaid'
+          : 'paid';
+      await api.post('/orders', {
         table_id: table,
         session_token: sessionToken,
         items: cart.map((i: MenuItem & { quantity: number }) => ({
@@ -112,18 +161,15 @@ export default function PaymentPage() {
         })),
         payment_method: selectedMethod,
         payment_status,
-      };
-
-      await api.post('/orders', payload);
+      });
 
       toast.success('Order created successfully!');
       clearCart();
       navigate(`/orders?table=${table}&token=${sessionToken}`);
     } catch (error: any) {
       toast.error(error?.response?.data?.message || 'Payment failed.');
-      if (error?.response?.status === 400 || error?.response?.status === 401) {
+      if (error?.response?.status === 400 || error?.response?.status === 401)
         navigate('/');
-      }
     }
   };
 
@@ -193,19 +239,35 @@ export default function PaymentPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 place-items-center">
-        <Button
-          onClick={handleConfirm}
-          variant="default"
-          className="py-6"
-          disabled={loadingSession || !sessionToken || !table}
-        >
-          {loadingSession ? 'Creating session...' : 'Confirm'}
-        </Button>
-        <Button variant="link" onClick={() => navigate('/cart')}>
-          Back to Cart
-        </Button>
-      </div>
+      {selectedMethod !== 'paypal' && (
+        <div className="grid gap-4 place-items-center">
+          <Button
+            onClick={handleConfirm}
+            variant="default"
+            className="py-6"
+            disabled={loadingSession || !sessionToken || !table}
+          >
+            {loadingSession ? 'Creating session...' : 'Confirm'}
+          </Button>
+          <Button
+            variant="link"
+            onClick={() => navigate(`/cart?${searchParams.toString()}`)}
+          >
+            Back to Cart
+          </Button>
+        </div>
+      )}
+      {selectedMethod === 'paypal' && (
+        <div className="grid gap-4 mt-4 place-items-center">
+          <div id="paypal-button-container" className="w-full max-w-xs" />
+          <Button
+            variant="link"
+            onClick={() => navigate(`/cart?${searchParams.toString()}`)}
+          >
+            Back to Cart
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

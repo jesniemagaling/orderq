@@ -7,6 +7,7 @@ import orderRoutes from './routes/orderRoutes.js';
 import sessionRoutes from './routes/sessionRoutes.js';
 import tableRoutes from './routes/tableRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import paypalRoutes from './routes/paypalRoutes.js';
 import path from 'path';
 
 const app = express();
@@ -59,6 +60,7 @@ app.use('/api/menu', menuRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/tables', tableRoutes);
+app.use('/api/paypal', paypalRoutes);
 
 // SERVE UPLOADED MENU IMAGES
 app.use(

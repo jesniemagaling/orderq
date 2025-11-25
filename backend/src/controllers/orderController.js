@@ -7,8 +7,14 @@ import {
 
 // Create a new order
 export const createOrder = async (req, res) => {
-  const { table_id, session_token, items, payment_method, payment_reference } =
-    req.body;
+  const {
+    table_id,
+    session_token,
+    items,
+    payment_method,
+    paypal_order_id,
+    payment_reference,
+  } = req.body;
 
   if (!table_id || !session_token || !items || items.length === 0) {
     return res.status(400).json({ message: 'Missing order details' });
@@ -46,7 +52,7 @@ export const createOrder = async (req, res) => {
         table_id,
         session_id,
         payment_method,
-        payment_method === 'cash' ? 'unpaid' : 'pending', // For cash unpaid, for online pending until payment confirmed
+        payment_method === 'cash' ? 'unpaid' : 'paid',
         total_amount,
       ]
     );
@@ -82,22 +88,21 @@ export const createOrder = async (req, res) => {
 
     // Insert into payments table for online payments
     if (payment_method === 'gcash' || payment_method === 'paypal') {
+      const paymentRef = paypal_order_id || payment_reference;
+      if (!paymentRef) {
+        throw new Error('Missing payment reference for online payment');
+      }
+
       await connection.query(
         `INSERT INTO payments (order_id, payment_method, payment_reference, amount, status)
-          VALUES (?, ?, ?, ?, ?)`,
-        [
-          orderId,
-          payment_method,
-          payment_reference || null,
-          total_amount,
-          'pending',
-        ]
+      VALUES (?, ?, ?, ?, ?)`,
+        [orderId, payment_method, paymentRef, total_amount, 'paid']
       );
     } else if (payment_method === 'cash') {
       // For cash, no external payment_reference needed, mark payment as unpaid by default
       await connection.query(
         `INSERT INTO payments (order_id, payment_method, amount, status)
-          VALUES (?, 'cash', ?, 'pending')`,
+          VALUES (?, 'cash', ?, 'unpaid')`,
         [orderId, total_amount]
       );
     }
@@ -133,10 +138,16 @@ export const createOrder = async (req, res) => {
     });
   } catch (error) {
     await connection.rollback();
+
+    // Debug logs
     console.error('Error creating order:', error);
-    res.status(500).json({ message: 'Server error' });
-  } finally {
-    connection.release();
+    console.error('SQL Error Message:', error.sqlMessage);
+    console.error('Incoming request body:', req.body);
+
+    res.status(500).json({
+      message: 'Server error',
+      error: error.sqlMessage || error.message,
+    });
   }
 };
 
