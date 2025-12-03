@@ -35,7 +35,7 @@ export default function FoodDetails() {
 
     const fetchFood = async () => {
       try {
-        const { data } = await api.get(`/menu/${id}`);
+        const { data } = await api.get<MenuItem>(`/menu/${id}`);
 
         const mappedFood: MenuItem = {
           id: String(data.id),

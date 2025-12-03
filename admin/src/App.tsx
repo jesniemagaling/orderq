@@ -5,6 +5,7 @@ import Overview from './pages/Overview';
 import Orders from './components/Orders';
 import Menu from './pages/Menu';
 import AddMenu from './components/AddMenu';
+import MenuHistory from './components/MenuHistory';
 import Tables from './pages/Tables';
 import KitchenOrders from './pages/KitchenOrders';
 import { ToastContainer } from 'react-toastify';
@@ -23,6 +24,7 @@ export default function App() {
           <Route path="/admin/orders" element={<Orders />} />
           <Route path="/admin/menu" element={<Menu />} />
           <Route path="/admin/add-menu" element={<AddMenu />} />
+          <Route path="/admin/menu-history" element={<MenuHistory />} />
 
           {/* Cashier */}
           <Route path="/cashier/tables" element={<Tables />} />

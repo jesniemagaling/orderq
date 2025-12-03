@@ -43,13 +43,19 @@ export const createSession = async (req, res) => {
         reused: true,
       });
 
-      return res.status(200).json({
+      const result = {
         message: 'Session already active',
         table_id: table.id,
         table_number: table.table_number,
         token: activeSession[0].token,
         expires_at: activeSession[0].expires_at,
-      });
+      };
+
+      if (typeof res.json === 'function') {
+        return res.status(200).json(result);
+      }
+
+      return result;
     }
 
     const token = crypto.randomBytes(24).toString('hex');
@@ -78,13 +84,19 @@ export const createSession = async (req, res) => {
       status: 'created',
     });
 
-    return res.status(201).json({
+    const result = {
       message: 'New session created',
       table_id: table.id,
       table_number: table.table_number,
       token,
       expires_at: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
-    });
+    };
+
+    if (typeof res.json === 'function') {
+      return res.status(201).json(result);
+    }
+
+    return result;
   } catch (error) {
     await connection.rollback();
     console.error('Error creating session:', error);
@@ -194,19 +206,37 @@ export const endSession = async (req, res) => {
 export const scanSessionFromQR = async (req, res) => {
   const { table_number } = req.params;
 
+  console.log('QR Scan Request → table_number =', table_number);
+
   try {
-    const fakeReq = { body: { table_number } };
-    const fakeRes = {
-      status: (code) => fakeRes,
-      json: (data) => data,
-    };
-
-    const sessionData = await createSession(fakeReq, fakeRes);
-
-    const FE = process.env.FRONTEND_URL.replace(/\/$/, '');
-    return res.redirect(
-      `${FE}/order?table=${table_number}&token=${sessionData.token}`
+    const sessionData = await createSession(
+      { body: { table_number } },
+      {} // empty response forces return of object
     );
+
+    console.log('sessionData returned from createSession:', sessionData);
+
+    if (!sessionData) {
+      console.error('sessionData is NULL/undefined');
+      return res.status(500).send('sessionData empty');
+    }
+
+    if (!sessionData.token) {
+      console.error('sessionData.token is missing:', sessionData);
+      return res.status(500).send('Token missing');
+    }
+
+    console.log('FRONTEND_URL =', process.env.FRONTEND_URL);
+
+    const FE = process.env.FRONTEND_URL?.replace(/\/$/, '') || '';
+    console.log('FE cleaned =', FE);
+
+    const redirectUrl = `${FE}/order?table=${table_number}&token=${sessionData.token}`;
+
+    console.log('Redirecting to:', redirectUrl);
+
+    // Redirect to customer app
+    return res.redirect(redirectUrl);
   } catch (err) {
     console.error('QR Scan Error:', err);
     return res.status(500).send('Server error');

@@ -7,6 +7,8 @@ import {
   updateMenuItem,
   deleteMenuItem,
   getTopSellingItems,
+  logMenuHistory,
+  getMenuHistory,
 } from '../controllers/menuController.js';
 import { verifyToken, verifyRole } from '../middlewares/authMiddleware.js';
 import { body, validationResult } from 'express-validator';
@@ -18,6 +20,7 @@ const router = express.Router();
 router.get('/', getMenu);
 router.get('/top-selling', getTopSellingItems);
 router.get('/categories', getMenuCategories);
+router.get('/history', getMenuHistory);
 router.get('/:id', getMenuById);
 
 // ADD MENU ITEM

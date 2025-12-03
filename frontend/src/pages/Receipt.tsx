@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import BackButton from '@/components/BackButton';
 import api from '@/lib/axios';
 import { useSessionGuard } from '@/hooks/useSessionGuard';
+import type { Order } from '@/types/order';
 
 export default function Receipt() {
   const storeInfo = {
@@ -29,7 +30,9 @@ export default function Receipt() {
     const fetchOrder = async () => {
       try {
         setLoading(true);
-        const res = await api.get(`/orders/by-session?token=${sessionToken}`);
+        const res = await api.get<Order[]>(
+          `/orders/by-session?token=${sessionToken}`
+        );
         const foundOrder = res.data.find(
           (o: any) => o.id.toString() === orderId
         );

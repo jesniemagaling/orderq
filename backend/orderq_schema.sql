@@ -23,6 +23,18 @@ INSERT INTO menu (name, description, price, category, stocks, status, image_url)
 ('Blueberry', 'A refreshing blueberry-flavored drink that blends sweetness and tang for a delightful fruity taste.', 120.00, 'Fruity', 40, 'in_stock', 'https://via.placeholder.com/150'),
 ('Caramel Macchiato', 'Espresso combined with milk, vanilla flavor, and caramel drizzle for a sweet, smooth coffee treat.', 180.00, 'Hot', 15, 'in_stock', 'https://via.placeholder.com/150');
 
+-- MENU HISTORY TABLE
+CREATE TABLE IF NOT EXISTS menu_history (
+  id INT NOT NULL AUTO_INCREMENT,
+  menu_id INT,
+  action ENUM('add','update','delete') NOT NULL,
+  old_data JSON,
+  new_data JSON,
+  performed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  FOREIGN KEY (menu_id) REFERENCES menu(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- TABLES TABLE (RESTAURANT TABLES)
 CREATE TABLE IF NOT EXISTS tables (
   id INT NOT NULL AUTO_INCREMENT,

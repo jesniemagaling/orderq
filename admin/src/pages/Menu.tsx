@@ -151,6 +151,13 @@ export default function Menu() {
           </div>
 
           <Button
+            onClick={() => (window.location.href = '/admin/menu-history')}
+            className="flex items-center gap-2"
+          >
+            Menu History
+          </Button>
+
+          <Button
             onClick={() => (window.location.href = '/admin/add-menu')}
             className="flex items-center gap-2 "
           >

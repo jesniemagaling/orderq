@@ -2,6 +2,7 @@ import { db } from '../config/db.js';
 import { notifyMenuUpdate } from '../../index.js';
 import fs from 'fs';
 import path from 'path';
+import { io } from '../../index.js';
 
 // Helper to delete old image file
 const deleteOldImage = (imagePath) => {
@@ -70,6 +71,7 @@ export const getMenuCategories = async (req, res) => {
 };
 
 // ADD NEW MENU ITEM
+// ADD NEW MENU ITEM
 export const addMenuItem = async (req, res) => {
   try {
     let { name, description, price, category, stocks } = req.body;
@@ -89,7 +91,7 @@ export const addMenuItem = async (req, res) => {
     const image_url = file ? `/uploads/menu/${file.filename}` : null;
     const status = stocks > 0 ? 'in_stock' : 'out_of_stock';
 
-    await db.query(
+    const [result] = await db.query(
       `INSERT INTO menu (name, description, price, category, stocks, status, image_url)
         VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
@@ -102,6 +104,19 @@ export const addMenuItem = async (req, res) => {
         image_url,
       ]
     );
+
+    const newItemId = result.insertId;
+
+    await logMenuHistory(newItemId, 'add', null, {
+      id: newItemId,
+      name,
+      description,
+      price,
+      category,
+      stocks,
+      status,
+      image_url,
+    });
 
     res.status(201).json({ message: 'Menu item added successfully!' });
 
@@ -119,7 +134,7 @@ export const addMenuItem = async (req, res) => {
 export const updateMenuItem = async (req, res) => {
   const { id } = req.params;
   let { name, description, price, category, stocks } = req.body;
-  const file = req.file; // uploaded image file
+  const file = req.file;
 
   try {
     if (!name || !price)
@@ -136,6 +151,8 @@ export const updateMenuItem = async (req, res) => {
     const [existing] = await db.query('SELECT * FROM menu WHERE id = ?', [id]);
     if (existing.length === 0)
       return res.status(404).json({ message: 'Menu item not found' });
+
+    const oldData = existing[0];
 
     const oldImage = existing[0].image_url;
     let image_url = oldImage;
@@ -161,20 +178,24 @@ export const updateMenuItem = async (req, res) => {
       ]
     );
 
+    const newData = {
+      id,
+      name,
+      description,
+      price,
+      category,
+      stocks,
+      status,
+      image_url,
+    };
+
+    await logMenuHistory(id, 'update', oldData, newData);
+
     res.status(200).json({ message: 'Menu item updated successfully!' });
 
     notifyMenuUpdate({
       type: 'update',
-      item: {
-        id,
-        name,
-        description,
-        price,
-        category,
-        stocks,
-        status,
-        image_url,
-      },
+      item: newData,
     });
   } catch (error) {
     console.error('Error updating menu item:', error);
@@ -190,9 +211,13 @@ export const deleteMenuItem = async (req, res) => {
     if (rows.length === 0)
       return res.status(404).json({ message: 'Menu item not found' });
 
-    deleteOldImage(rows[0].image_url);
+    const oldData = rows[0];
+
+    deleteOldImage(oldData.image_url);
 
     await db.query('DELETE FROM menu WHERE id = ?', [id]);
+
+    await logMenuHistory(id, 'delete', oldData, null);
 
     res.status(200).json({ message: 'Menu item deleted successfully!' });
 
@@ -234,4 +259,51 @@ export const getTopSellingItems = async (req, res) => {
     console.error('Error fetching top-selling items:', error);
     res.status(500).json({ message: 'Server error' });
   }
+};
+
+// GET MENU HISTORY
+export const getMenuHistory = async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      `SELECT * FROM menu_history ORDER BY created_at DESC`
+    );
+
+    const formatted = rows.map((entry) => ({
+      ...entry,
+      old_data: entry.old_data ? JSON.parse(entry.old_data) : null,
+      new_data: entry.new_data ? JSON.parse(entry.new_data) : null,
+    }));
+
+    res.status(200).json(formatted);
+  } catch (error) {
+    console.error('Error fetching menu history:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const logMenuHistory = async (
+  menu_id,
+  action,
+  old_data = null,
+  new_data = null,
+  io = null
+) => {
+  const [result] = await db.query(
+    `INSERT INTO menu_history (menu_id, action, old_data, new_data) VALUES (?, ?, ?, ?)`,
+    [
+      menu_id,
+      action,
+      old_data ? JSON.stringify(old_data) : null,
+      new_data ? JSON.stringify(new_data) : null,
+    ]
+  );
+
+  io.emit('menuHistoryUpdated', {
+    id: result.insertId,
+    menu_id,
+    action,
+    old_data,
+    new_data,
+    created_at: new Date(),
+  });
 };

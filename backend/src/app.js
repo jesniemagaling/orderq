@@ -14,20 +14,36 @@ const app = express();
 
 app.set('trust proxy', 1);
 
-console.log(
-  'Allowed origins:',
+// Allowed frontend origins
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
   process.env.FRONTEND_URL_1,
-  process.env.FRONTEND_URL_2
-);
+  process.env.FRONTEND_URL_2,
+].filter(Boolean);
+
+console.log('Allowed origins:', allowedOrigins);
 
 // CORS CONFIG
-app.use(
-  cors({
-    origin: [process.env.FRONTEND_URL_1, process.env.FRONTEND_URL_2],
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  })
-);
+// Dynamic origin check for credentials
+const corsOptions = {
+  origin: function (origin, callback) {
+    // allow requests with no origin (like Postman)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg =
+        'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+};
+
+app.use(cors(corsOptions));
+
+// Handle preflight requests
+app.options(/.*/, cors(corsOptions));
 
 // HELMET CONFIG
 app.use(
@@ -36,10 +52,11 @@ app.use(
   })
 );
 
+// BODY PARSERS
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-// RATE LIMIT (Production only)
+// RATE LIMIT
 if (process.env.NODE_ENV === 'production') {
   const limiter = rateLimit({
     windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
@@ -50,6 +67,7 @@ if (process.env.NODE_ENV === 'production') {
   app.use(limiter);
 }
 
+// HEALTH CHECK
 app.get('/', (req, res) => {
   res.send('OrderQ backend is running securely!');
 });
@@ -62,7 +80,8 @@ app.use('/api/sessions', sessionRoutes);
 app.use('/api/tables', tableRoutes);
 app.use('/api/paypal', paypalRoutes);
 
-// SERVE UPLOADED MENU IMAGES
+// STATIC FILES
+// Uploaded menu images
 app.use(
   '/uploads',
   express.static(path.join(process.cwd(), 'uploads'), {
@@ -73,7 +92,7 @@ app.use(
   })
 );
 
-// SERVE QR CODES SAFELY
+// QR codes
 app.use(
   '/qrcodes',
   express.static(path.join(process.cwd(), 'public/qrcodes'), {
@@ -83,5 +102,16 @@ app.use(
     },
   })
 );
+
+app.use('/api/sessions/verify/:token', (req, res, next) => {
+  const tokenValid = false;
+  if (!tokenValid) {
+    return res
+      .status(204)
+      .set('Access-Control-Allow-Origin', req.headers.origin || '*')
+      .send();
+  }
+  next();
+});
 
 export default app;
