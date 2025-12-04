@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS orders (
   table_id INT NOT NULL,
   status ENUM('pending', 'unserved', 'served', 'canceled') DEFAULT 'pending',
   payment_method ENUM('cash','gcash','paypal') DEFAULT 'cash',
-  payment_status ENUM('unpaid','paid','failed') DEFAULT 'unpaid',
+  payment_status ENUM('unpaid','paid','failed', 'canceled') DEFAULT 'unpaid',
   total_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),

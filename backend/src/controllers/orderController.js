@@ -152,6 +152,7 @@ export const createOrder = async (req, res) => {
   }
 };
 
+// Cancel an order
 export const cancelOrder = async (req, res) => {
   const { orderId } = req.params;
   console.log('[CancelOrder] orderId:', orderId);
@@ -190,11 +191,17 @@ export const cancelOrder = async (req, res) => {
       orderId,
     ]);
 
+    await db.query(
+      'UPDATE orders SET status = ?, payment_status = ? WHERE id = ?',
+      ['canceled', 'canceled', orderId]
+    );
     console.log('[CancelOrder] Order canceled successfully');
 
+    // Notify frontend via WebSocket
     notifyOrderCancelled({
       orderId: order.id,
       tableId: order.table_id,
+      payment_status: 'canceled',
     });
 
     res.json({ message: 'Order canceled successfully' });
