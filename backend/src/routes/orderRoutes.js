@@ -6,6 +6,7 @@ import {
   getOrdersBySession,
   markOrderAsPaid,
   confirmOrder,
+  cancelOrder,
   markOrderAsServed,
   getSalesGraph,
   getRevenueByRange,
@@ -29,5 +30,6 @@ router.get('/active-count', getActiveOrdersCount);
 // PUT routes
 router.put('/:id/pay', markOrderAsPaid);
 router.put('/:id/serve', markOrderAsServed);
+router.put('/:orderId/cancel', cancelOrder);
 
 export default router;

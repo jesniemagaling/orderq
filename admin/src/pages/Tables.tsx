@@ -25,8 +25,9 @@ interface Order {
 interface Table {
   id: number;
   table_number: string;
-  status: 'available' | 'occupied' | 'in_progress' | 'served';
+  status: 'available' | 'occupied' | 'in_progress' | 'served' | 'canceled';
   has_additional_order?: boolean;
+  has_canceled_order?: boolean;
   sessionToken?: string;
 }
 
@@ -127,6 +128,39 @@ export default function Tables() {
       socket.off('disconnect');
     };
   }, []);
+
+  useEffect(() => {
+    const handleOrderCancelled = (data: {
+      tableId: number;
+      orderId: number;
+    }) => {
+      console.log('Order cancelled:', data);
+
+      setTables((prev) =>
+        prev.map((t) =>
+          t.id === data.tableId ? { ...t, has_canceled_order: true } : t
+        )
+      );
+
+      if (selectedTable?.id === data.tableId) {
+        setOrders((prev) =>
+          prev.map((order) =>
+            order.id === data.orderId ? { ...order, status: 'canceled' } : order
+          )
+        );
+        setTables((prev) =>
+          prev.map((t) =>
+            t.id === data.tableId ? { ...t, has_canceled_order: false } : t
+          )
+        );
+      }
+    };
+
+    socket.on('orderCancelled', handleOrderCancelled);
+    return () => {
+      socket.off('orderCancelled', handleOrderCancelled);
+    };
+  }, [selectedTable]);
 
   // Fetch specific table’s orders
   const fetchTableOrders = async (tableId: number) => {
@@ -301,9 +335,9 @@ export default function Tables() {
 
   return (
     <div className="flex gap-10">
+      {/* Tables list */}
       <div className="w-1/2">
         <h1 className="mb-6 text-3xl font-bold">All Tables</h1>
-
         {tables.length === 0 ? (
           <p className="text-gray-500">No tables found.</p>
         ) : (
@@ -323,7 +357,6 @@ export default function Tables() {
                     Table #{table.table_number}
                   </p>
                 </div>
-
                 <div className="text-right">
                   <p
                     className={`text-sm font-medium ${
@@ -337,9 +370,7 @@ export default function Tables() {
                       .replace(/\b\w/g, (l) => l.toUpperCase())}
                   </p>
                 </div>
-
-                {/*notification*/}
-                {table.has_additional_order && (
+                {(table.has_additional_order || table.has_canceled_order) && (
                   <span className="absolute w-3 h-3 bg-red-600 rounded-full top-1 right-1 animate-pulse" />
                 )}
               </div>
@@ -348,6 +379,7 @@ export default function Tables() {
         )}
       </div>
 
+      {/* Orders panel */}
       <div className="flex-1 px-2 py-4">
         {selectedTable ? (
           <>
@@ -366,7 +398,12 @@ export default function Tables() {
             {orders.length > 0 ? (
               <div className="max-h-[740px] overflow-y-auto">
                 {orders.map((order, orderIdx) => (
-                  <div key={order.id} className="px-4 mb-8 border-b">
+                  <div
+                    key={order.id}
+                    className={`px-4 mb-8 border-b ${
+                      order.status === 'canceled' ? 'opacity-50' : ''
+                    }`}
+                  >
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="text-xl font-semibold">
                         {orderIdx === 0
@@ -381,6 +418,7 @@ export default function Tables() {
                           )
                         </span>
                       </h3>
+
                       {order.status === 'pending' && (
                         <Button
                           className="bg-primary"
@@ -388,6 +426,12 @@ export default function Tables() {
                         >
                           Print Invoice
                         </Button>
+                      )}
+
+                      {order.status === 'canceled' && (
+                        <span className="px-2 py-1 text-sm font-semibold border rounded text-primary border-primary">
+                          Cancelled
+                        </span>
                       )}
                     </div>
 
@@ -435,7 +479,7 @@ export default function Tables() {
         )}
       </div>
 
-      {/* PRINT ORDER */}
+      {/* Print Order Modal */}
       <Modal isOpen={!!printOrder} onClose={() => setPrintOrder(null)}>
         {printOrder && (
           <>
@@ -475,10 +519,7 @@ export default function Tables() {
                 Subtotal: ₱
                 {Number(printOrder.total_amount || 0).toLocaleString(
                   undefined,
-                  {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  }
+                  { minimumFractionDigits: 2, maximumFractionDigits: 2 }
                 )}
               </p>
               <p>
@@ -507,7 +548,6 @@ export default function Tables() {
           <h2 className="mb-4 text-xl font-semibold">
             Table #{qrTableNumber} QR Code
           </h2>
-
           {qrPreview ? (
             <img
               src={qrPreview}
@@ -522,10 +562,8 @@ export default function Tables() {
             className="w-full bg-primary"
             onClick={async () => {
               if (!qrPreview) return;
-
               const response = await fetch(qrPreview);
               const blob = await response.blob();
-
               const link = document.createElement('a');
               link.href = URL.createObjectURL(blob);
               link.download = `Table-${qrTableNumber}-QR.png`;

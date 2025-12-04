@@ -3,6 +3,7 @@ import {
   notifyNewOrder,
   notifyTableStatus,
   notifyMenuUpdate,
+  notifyOrderCancelled,
 } from '../../index.js';
 
 // Create a new order
@@ -148,6 +149,58 @@ export const createOrder = async (req, res) => {
       message: 'Server error',
       error: error.sqlMessage || error.message,
     });
+  }
+};
+
+export const cancelOrder = async (req, res) => {
+  const { orderId } = req.params;
+  console.log('[CancelOrder] orderId:', orderId);
+
+  try {
+    const [orders] = await db.query('SELECT * FROM orders WHERE id = ?', [
+      orderId,
+    ]);
+
+    if (orders.length === 0) {
+      console.log('[CancelOrder] Order not found');
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    const order = orders[0];
+
+    if (order.payment_method !== 'cash') {
+      console.log(
+        '[CancelOrder] Payment method not cash:',
+        order.payment_method
+      );
+      return res
+        .status(400)
+        .json({ message: 'Only cash orders can be canceled' });
+    }
+
+    if (order.status !== 'pending') {
+      console.log('[CancelOrder] Order already confirmed:', order.status);
+      return res
+        .status(400)
+        .json({ message: 'Order cannot be canceled at this stage' });
+    }
+
+    await db.query('UPDATE orders SET status = ? WHERE id = ?', [
+      'canceled',
+      orderId,
+    ]);
+
+    console.log('[CancelOrder] Order canceled successfully');
+
+    notifyOrderCancelled({
+      orderId: order.id,
+      tableId: order.table_id,
+    });
+
+    res.json({ message: 'Order canceled successfully' });
+  } catch (err) {
+    console.error('[CancelOrder] Error:', err);
+    res.status(500).json({ message: err.message });
   }
 };
 

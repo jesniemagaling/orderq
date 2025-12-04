@@ -31,6 +31,10 @@ export const notifyNewOrder = (tableId, data = {}) => {
   console.log(`New order event emitted for Table ${tableId}`);
 };
 
+export const notifyOrderCancelled = (order) => {
+  io.emit('orderCancelled', order);
+};
+
 export const notifyTableStatus = (tableId, status) => {
   io.emit('tableStatusUpdate', { tableId, status });
   console.log(`Table ${tableId} status updated → ${status}`);

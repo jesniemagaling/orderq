@@ -115,14 +115,22 @@ export default function Orders() {
 
               <Separator />
 
-              <Link
-                to={`/order-status/${order.id}?table=${order.table_number}&token=${sessionToken}`}
-                className="flex justify-center w-full"
-              >
-                <Button variant="default" className="py-6">
-                  Track Order
-                </Button>
-              </Link>
+              {order.status === 'canceled' ? (
+                <div className="flex justify-center w-full">
+                  <Button variant="default" disabled className="py-6">
+                    Order Canceled
+                  </Button>
+                </div>
+              ) : (
+                <Link
+                  to={`/order-status/${order.id}?table=${order.table_number}&token=${sessionToken}`}
+                  className="flex justify-center w-full"
+                >
+                  <Button variant="default" className="py-6">
+                    Track Order
+                  </Button>
+                </Link>
+              )}
             </div>
           );
         })}
