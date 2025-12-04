@@ -9,6 +9,7 @@ interface Order {
   payment_status: 'unpaid' | 'paid' | 'canceled';
   total_amount: number;
   payment_method: string;
+  created_at?: string;
   items: {
     id: number;
     name: string;
@@ -208,7 +209,11 @@ export default function Orders() {
               {selectedOrder.payment_status !== 'canceled' && (
                 <div className="flex gap-3">
                   <PrintReceipt
-                    order={selectedOrder}
+                    order={{
+                      ...selectedOrder,
+                      created_at:
+                        selectedOrder.created_at || new Date().toISOString(),
+                    }}
                     onConfirm={() => {
                       setOrders((prev) =>
                         prev.map((o) =>
@@ -219,6 +224,7 @@ export default function Orders() {
                       );
                     }}
                   />
+
                   {selectedOrder.payment_status === 'unpaid' && (
                     <Button
                       onClick={() => handleBillOut(selectedOrder.id)}
