@@ -30,9 +30,13 @@ CREATE TABLE IF NOT EXISTS menu_history (
   action ENUM('add','update','delete') NOT NULL,
   old_data JSON,
   new_data JSON,
+  performed_by INT NULL,
   performed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
-  FOREIGN KEY (menu_id) REFERENCES menu(id) ON DELETE SET NULL
+  FOREIGN KEY (menu_id) REFERENCES menu(id) ON DELETE SET NULL,
+  FOREIGN KEY (performed_by) REFERENCES users(id) ON DELETE SET NULL,
+  INDEX idx_menu_id (menu_id),
+  INDEX idx_action (action)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- TABLES TABLE (RESTAURANT TABLES)

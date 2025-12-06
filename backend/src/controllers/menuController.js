@@ -71,7 +71,6 @@ export const getMenuCategories = async (req, res) => {
 };
 
 // ADD NEW MENU ITEM
-// ADD NEW MENU ITEM
 export const addMenuItem = async (req, res) => {
   try {
     let { name, description, price, category, stocks } = req.body;
@@ -107,16 +106,21 @@ export const addMenuItem = async (req, res) => {
 
     const newItemId = result.insertId;
 
-    await logMenuHistory(newItemId, 'add', null, {
-      id: newItemId,
-      name,
-      description,
-      price,
-      category,
-      stocks,
-      status,
-      image_url,
-    });
+    await logMenuHistory(
+      result.insertId,
+      'add',
+      null,
+      {
+        name,
+        price,
+        description,
+        category,
+        stocks,
+        status,
+        image_url,
+      },
+      req.app.get('io')
+    );
 
     res.status(201).json({ message: 'Menu item added successfully!' });
 
@@ -187,9 +191,15 @@ export const updateMenuItem = async (req, res) => {
       stocks,
       status,
       image_url,
+      logged_at: new Date().toISOString(),
     };
 
-    await logMenuHistory(id, 'update', oldData, newData);
+    const oldDataWithTimestamp = {
+      ...oldData,
+      logged_at: oldData?.created_at || null,
+    };
+
+    await logMenuHistory(id, 'update', oldDataWithTimestamp, newData);
 
     res.status(200).json({ message: 'Menu item updated successfully!' });
 
@@ -264,14 +274,36 @@ export const getTopSellingItems = async (req, res) => {
 // GET MENU HISTORY
 export const getMenuHistory = async (req, res) => {
   try {
-    const [rows] = await db.query(
-      `SELECT * FROM menu_history ORDER BY created_at DESC`
-    );
+    const { action, menu_id, limit = 50, offset = 0 } = req.query;
+
+    let query = `SELECT * FROM menu_history WHERE 1=1`;
+    const params = [];
+
+    if (action) {
+      query += ` AND action = ?`;
+      params.push(action);
+    }
+
+    if (menu_id) {
+      query += ` AND menu_id = ?`;
+      params.push(menu_id);
+    }
+
+    query += ` ORDER BY created_at DESC LIMIT ? OFFSET ?`;
+    params.push(Number(limit), Number(offset));
+
+    const [rows] = await db.query(query, params);
 
     const formatted = rows.map((entry) => ({
       ...entry,
-      old_data: entry.old_data ? JSON.parse(entry.old_data) : null,
-      new_data: entry.new_data ? JSON.parse(entry.new_data) : null,
+      old_data:
+        entry.old_data && typeof entry.old_data === 'string'
+          ? JSON.parse(entry.old_data)
+          : entry.old_data,
+      new_data:
+        entry.new_data && typeof entry.new_data === 'string'
+          ? JSON.parse(entry.new_data)
+          : entry.new_data,
     }));
 
     res.status(200).json(formatted);
@@ -281,29 +313,47 @@ export const getMenuHistory = async (req, res) => {
   }
 };
 
+// LOG MENU HISTORY
 export const logMenuHistory = async (
   menu_id,
   action,
   old_data = null,
   new_data = null,
+  user_id = null,
   io = null
 ) => {
-  const [result] = await db.query(
-    `INSERT INTO menu_history (menu_id, action, old_data, new_data) VALUES (?, ?, ?, ?)`,
-    [
-      menu_id,
-      action,
-      old_data ? JSON.stringify(old_data) : null,
-      new_data ? JSON.stringify(new_data) : null,
-    ]
-  );
+  try {
+    const [result] = await db.query(
+      `INSERT INTO menu_history (menu_id, action, old_data, new_data, user_id) VALUES (?, ?, ?, ?, ?)`,
+      [
+        menu_id,
+        action,
+        old_data ? JSON.stringify(old_data) : null,
+        new_data ? JSON.stringify(new_data) : null,
+        user_id,
+      ]
+    );
 
-  io.emit('menuHistoryUpdated', {
-    id: result.insertId,
-    menu_id,
-    action,
-    old_data,
-    new_data,
-    created_at: new Date(),
-  });
+    const [rows] = await db.query(`SELECT * FROM menu_history WHERE id = ?`, [
+      result.insertId,
+    ]);
+    const entry = rows[0];
+
+    entry.old_data =
+      entry.old_data && typeof entry.old_data === 'string'
+        ? JSON.parse(entry.old_data)
+        : entry.old_data || null;
+
+    entry.new_data =
+      entry.new_data && typeof entry.new_data === 'string'
+        ? JSON.parse(entry.new_data)
+        : entry.new_data || null;
+
+    io?.emit('menuHistoryUpdated', entry);
+
+    return entry;
+  } catch (error) {
+    console.error('Error logging menu history:', error);
+    throw error;
+  }
 };

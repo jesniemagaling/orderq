@@ -5,7 +5,7 @@ import Overview from './pages/Overview';
 import Orders from './components/Orders';
 import Menu from './pages/Menu';
 import AddMenu from './components/AddMenu';
-import MenuHistory from './components/MenuHistory';
+import MenuHistory from './components/MenuAudit';
 import Tables from './pages/Tables';
 import KitchenOrders from './pages/KitchenOrders';
 import { ToastContainer } from 'react-toastify';
