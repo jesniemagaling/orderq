@@ -352,10 +352,12 @@ export default function Overview() {
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-medium inline-block min-w-[75px] text-center ${
                             o.status === 'served'
-                              ? 'bg-green-100 text-green-700'
-                              : o.status === 'pending'
                               ? 'bg-yellow-100 text-yellow-700'
-                              : 'bg-blue-100 text-blue-700'
+                              : o.status === 'served'
+                              ? 'bg-blue-100 text-blue-700'
+                              : o.status === 'canceled'
+                              ? 'bg-red-100 text-red-700'
+                              : ''
                           }`}
                         >
                           {o.status
