@@ -224,7 +224,9 @@ export default function MenuHistory() {
                           #{item.id.toString().padStart(6, '0')}
                         </td>
                         <td className="p-3 text-left text-gray-700">
-                          #{item.menu_id.toString().padStart(6, '0')}
+                          {item.menu_id != null
+                            ? `#${item.menu_id.toString().padStart(6, '0')}`
+                            : '—'}
                         </td>
                         <td className="p-3 text-left">
                           <span
@@ -244,51 +246,126 @@ export default function MenuHistory() {
                         </td>
                       </tr>
 
-                      {isExpanded &&
-                        item.action === 'update' &&
-                        differences.length > 0 && (
-                          <tr className="border-b bg-gray-50">
-                            <td colSpan={5} className="p-5">
-                              <div className="mb-3 text-lg font-semibold text-gray-800">
-                                Changes
-                              </div>
-                              <table className="w-full overflow-hidden text-sm rounded-lg">
-                                <thead>
-                                  <tr className="bg-gray-200">
-                                    <th className="p-2 text-left">Field</th>
-                                    <th className="p-2 text-left text-red-600">
-                                      Old
-                                    </th>
-                                    <th className="p-2 text-left text-green-600">
-                                      New
-                                    </th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {differences.map((diff) => (
-                                    <tr
-                                      key={diff.field}
-                                      className="border-t bg-yellow-50"
-                                    >
-                                      <td className="p-2 font-medium capitalize">
-                                        {formatField(diff.field)}
-                                        <span className="px-2 py-1 ml-2 text-xs text-white bg-yellow-400 rounded-full">
-                                          Updated
-                                        </span>
-                                      </td>
-                                      <td className="p-2 text-gray-600">
-                                        {formatValue(diff.oldValue, diff.field)}
-                                      </td>
-                                      <td className="p-2 font-semibold text-gray-900">
-                                        {formatValue(diff.newValue, diff.field)}
-                                      </td>
+                      {isExpanded && (
+                        <tr className="border-b bg-gray-50">
+                          <td colSpan={5} className="p-5">
+                            {/* --- UPDATE --- */}
+                            {item.action === 'update' &&
+                              differences.length > 0 && (
+                                <>
+                                  <div className="mb-3 text-lg font-semibold text-gray-800">
+                                    Changes
+                                  </div>
+                                  <table className="w-full overflow-hidden text-sm rounded-lg">
+                                    <thead>
+                                      <tr className="bg-gray-200">
+                                        <th className="p-2 text-left">Field</th>
+                                        <th className="p-2 text-left text-red-600">
+                                          Old
+                                        </th>
+                                        <th className="p-2 text-left text-green-600">
+                                          New
+                                        </th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {differences.map((diff) => (
+                                        <tr
+                                          key={diff.field}
+                                          className="border-t bg-yellow-50"
+                                        >
+                                          <td className="p-2 font-medium">
+                                            {formatField(diff.field)}
+                                          </td>
+                                          <td className="p-2 text-gray-600">
+                                            {formatValue(
+                                              diff.oldValue,
+                                              diff.field
+                                            )}
+                                          </td>
+                                          <td className="p-2 font-semibold text-gray-900">
+                                            {formatValue(
+                                              diff.newValue,
+                                              diff.field
+                                            )}
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </>
+                              )}
+
+                            {/* --- ADD --- */}
+                            {item.action === 'add' && item.new_data && (
+                              <>
+                                <div className="mb-3 text-lg font-semibold text-gray-800">
+                                  New Item Details
+                                </div>
+                                <table className="w-full overflow-hidden text-sm rounded-lg">
+                                  <thead>
+                                    <tr className="bg-gray-200">
+                                      <th className="p-2 text-left">Field</th>
+                                      <th className="p-2 text-left">Value</th>
                                     </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </td>
-                          </tr>
-                        )}
+                                  </thead>
+                                  <tbody>
+                                    {Object.entries(item.new_data).map(
+                                      ([key, val]) => (
+                                        <tr
+                                          key={key}
+                                          className="border-t bg-green-50"
+                                        >
+                                          <td className="p-2 font-medium">
+                                            {formatField(key)}
+                                          </td>
+                                          <td className="p-2 text-gray-900">
+                                            {formatValue(val, key)}
+                                          </td>
+                                        </tr>
+                                      )
+                                    )}
+                                  </tbody>
+                                </table>
+                              </>
+                            )}
+
+                            {/* --- DELETE --- */}
+                            {item.action === 'delete' && item.old_data && (
+                              <>
+                                <div className="mb-3 text-lg font-semibold text-gray-800">
+                                  Deleted Item Details
+                                </div>
+                                <table className="w-full overflow-hidden text-sm rounded-lg">
+                                  <thead>
+                                    <tr className="bg-gray-200">
+                                      <th className="p-2 text-left">Field</th>
+                                      <th className="p-2 text-left">Value</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {Object.entries(item.old_data).map(
+                                      ([key, val]) => (
+                                        <tr
+                                          key={key}
+                                          className="border-t bg-red-50"
+                                        >
+                                          <td className="p-2 font-medium">
+                                            {formatField(key)}
+                                          </td>
+                                          <td className="p-2 text-gray-900">
+                                            {formatValue(val, key)}
+                                          </td>
+                                        </tr>
+                                      )
+                                    )}
+                                  </tbody>
+                                </table>
+                              </>
+                            )}
+                          </td>
+                        </tr>
+                      )}
                     </Fragment>
                   );
                 })

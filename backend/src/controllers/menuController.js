@@ -216,6 +216,7 @@ export const updateMenuItem = async (req, res) => {
 // DELETE MENU ITEM
 export const deleteMenuItem = async (req, res) => {
   const { id } = req.params;
+
   try {
     const [rows] = await db.query('SELECT * FROM menu WHERE id = ?', [id]);
     if (rows.length === 0)
@@ -223,11 +224,11 @@ export const deleteMenuItem = async (req, res) => {
 
     const oldData = rows[0];
 
+    await logMenuHistory(id, 'delete', oldData, null);
+
     deleteOldImage(oldData.image_url);
 
     await db.query('DELETE FROM menu WHERE id = ?', [id]);
-
-    await logMenuHistory(id, 'delete', oldData, null);
 
     res.status(200).json({ message: 'Menu item deleted successfully!' });
 
