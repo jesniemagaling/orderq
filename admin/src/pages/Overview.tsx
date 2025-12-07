@@ -350,8 +350,8 @@ export default function Overview() {
                       </td>
                       <td className="py-3 pr-3 text-center">
                         <span
-                          className={`px-3 py-1 rounded-full text-xs font-medium inline-block min-w-[75px] text-center ${
-                            o.status === 'served'
+                          className={`px-3 py-1 rounded-full text-xs font-semibold inline-block min-w-[75px] text-center ${
+                            o.status === 'unserved'
                               ? 'bg-yellow-100 text-yellow-700'
                               : o.status === 'served'
                               ? 'bg-blue-100 text-blue-700'

@@ -10,6 +10,7 @@ import BackButton from '@/components/BackButton';
 import api from '@/lib/axios';
 import { socket } from '@/lib/socket';
 import { useSessionGuard } from '@/hooks/useSessionGuard';
+import { toast } from 'react-toastify';
 
 const statusSteps = [
   { title: 'Order Pending', desc: 'Your order has been placed' },
@@ -95,6 +96,10 @@ export default function TrackOrder() {
         const update = updates.find((d) => d.tableId === prev.table_id);
         if (!update) return prev;
 
+        if (update.status === 'unserved' && prev.status === 'pending') {
+          toast.warning('Your order has been confirmed by the cashier.');
+        }
+
         return {
           ...prev,
           status: update.status || update.new_status,
@@ -142,21 +147,22 @@ export default function TrackOrder() {
     try {
       setIsCancelling(true);
 
-      await api
-        .put(`/orders/${order.id}/cancel`)
-        .then((res) => console.log('Order canceled!', res.data))
-        .catch((err) => console.error(err));
+      await api.put(`/orders/${order.id}/cancel`);
 
-      // update UI instantly
+      // SUCCESS
       setOrder((prev) => (prev ? { ...prev, status: 'cancelled' } : prev));
 
-      // redirect back after slight delay
       setTimeout(() => {
         navigate(`/orders?table=${table}&token=${sessionToken}`);
       }, 1000);
-    } catch (err) {
-      alert('Failed to cancel order.');
-      console.error(err);
+    } catch (err: any) {
+      const message = err?.response?.data?.message || 'Failed to cancel order.';
+
+      toast.warning(message);
+
+      if (message.includes('cannot be canceled')) {
+        setOrder((prev) => (prev ? { ...prev, status: 'unserved' } : prev));
+      }
     } finally {
       setIsCancelling(false);
     }
@@ -202,27 +208,29 @@ export default function TrackOrder() {
           </div>
         </div>
 
-        <div className="flex w-full gap-4 p-4 place-items-center">
+        <div className="flex items-center justify-center w-full gap-4 p-4">
           {/* Cancel Order */}
           {canCancel && (
-            <Button
-              className="w-full py-6"
-              disabled={isCancelling}
-              onClick={cancelOrder}
-            >
-              {isCancelling ? 'Cancelling...' : 'Cancel Order'}
-            </Button>
+            <div className="flex justify-end flex-1">
+              <Button
+                className="w-full py-6"
+                disabled={isCancelling}
+                onClick={cancelOrder}
+              >
+                {isCancelling ? 'Cancelling...' : 'Cancel Order'}
+              </Button>
+            </div>
           )}
 
-          {/* Receipt */}
-          <Link
-            to={`/receipt/${order.id}?table=${order.table_number}&token=${sessionToken}`}
-            className="flex justify-center w-full"
-          >
-            <Button variant="default" className="py-6">
-              View Receipt
-            </Button>
-          </Link>
+          {/* View Receipt */}
+          <div className="flex justify-center flex-1">
+            <Link
+              to={`/receipt/${order.id}?table=${order.table_number}&token=${sessionToken}`}
+              className="w-full"
+            >
+              <Button className="w-full py-6">View Receipt</Button>
+            </Link>
+          </div>
         </div>
       </div>
       <Button
