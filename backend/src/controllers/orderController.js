@@ -543,15 +543,24 @@ export const getSalesGraph = async (req, res) => {
 // Get today's total revenue
 export const getRevenueByRange = async (req, res) => {
   const { start, end } = req.query;
+
+  if (!start || !end) {
+    return res
+      .status(400)
+      .json({ message: 'Start and end dates are required' });
+  }
+
   try {
     const [rows] = await db.query(
-      `SELECT DATE(created_at) AS date, SUM(total_amount) AS total
-        FROM orders
-        WHERE created_at BETWEEN ? AND ?
-        GROUP BY DATE(created_at)
+      `SELECT DATE(o.created_at) AS date, SUM(o.total_amount) AS total
+        FROM orders o
+        WHERE o.created_at BETWEEN ? AND ?
+          AND o.status != 'canceled'
+        GROUP BY DATE(o.created_at)
         ORDER BY date ASC`,
       [start, end]
     );
+
     res.status(200).json(rows);
   } catch (err) {
     console.error('Error fetching range revenue:', err);

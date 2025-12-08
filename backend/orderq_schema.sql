@@ -30,14 +30,19 @@ CREATE TABLE IF NOT EXISTS menu_history (
   action ENUM('add','update','delete') NOT NULL,
   old_data JSON,
   new_data JSON,
-  performed_by INT NULL,
+  user_id INT NULL,
   performed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   FOREIGN KEY (menu_id) REFERENCES menu(id) ON DELETE SET NULL,
-  FOREIGN KEY (performed_by) REFERENCES users(id) ON DELETE SET NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
   INDEX idx_menu_id (menu_id),
-  INDEX idx_action (action)
+  INDEX idx_action (action),
+  INDEX idx_user_id (user_id),
+  INDEX idx_performed_at (performed_at),
+  INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 
 -- TABLES TABLE (RESTAURANT TABLES)
 CREATE TABLE IF NOT EXISTS tables (
@@ -114,8 +119,8 @@ CREATE TABLE IF NOT EXISTS users (
 
 INSERT INTO users (username, email, password, role) VALUES
 ('admin', 'admin@orderq.com', 'admin123', 'admin'),
-('cashier1', 'cashier@orderq.com', 'cashier123', 'cashier'),
-('kitchen1', 'kitchen@orderq.com', 'kitchen123', 'kitchen');
+('cashier', 'cashier@orderq.com', 'cashier123', 'cashier'),
+('kitchen', 'kitchen@orderq.com', 'kitchen123', 'kitchen');
 
 -- PAYMENTS TABLE (for secure online payment tracking)
 CREATE TABLE IF NOT EXISTS payments (
@@ -124,7 +129,7 @@ CREATE TABLE IF NOT EXISTS payments (
     payment_method ENUM('cash','gcash','paypal') NOT NULL,
     payment_reference VARCHAR(255),
     amount DECIMAL(10,2) NOT NULL,
-    status ENUM('pending','completed','failed') DEFAULT 'pending',
+    status ENUM('paid','unpaid') DEFAULT 'unpaid',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE

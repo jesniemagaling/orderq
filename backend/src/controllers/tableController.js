@@ -14,44 +14,43 @@ export const createTable = async (req, res) => {
     const { table_number } = req.body;
 
     if (!table_number) {
-      debugError('Table number missing in request body');
       return res.status(400).json({ message: 'table_number is required' });
     }
 
-    // Insert new table
+    // Save DB
     const [result] = await db.query(
       `INSERT INTO tables (table_number, status) VALUES (?, 'available')`,
       [table_number]
     );
 
     const newId = result.insertId;
-    debugLog('Table inserted in DB', { newId, table_number });
 
-    // Prepare QR path
-    const qrFolder = path.join('uploads', 'qrcodes');
+    // Always use public/qrcodes
+    const qrFolder = path.resolve('public/qrcodes');
     if (!fs.existsSync(qrFolder)) {
       fs.mkdirSync(qrFolder, { recursive: true });
-      debugLog('Created QR folder', qrFolder);
     }
 
-    const qrPath = path.join(qrFolder, `table-${newId}.png`);
+    const fileName = `table-${table_number}.png`;
+    const filePath = path.join(qrFolder, fileName);
 
-    const qrData = `${process.env.FRONTEND_URL}/order?table=${newId}`;
-    debugLog('QR Data to Encode', qrData);
+    const qrData = `${process.env.BACKEND_URL}/api/sessions/scan/${table_number}`;
 
-    // Generate QR
-    await QRCode.toFile(qrPath, qrData);
-    debugLog('QR Generated Successfully', qrPath);
+    await QRCode.toFile(filePath, qrData);
 
-    // Save to DB
+    // Save path as /qrcodes/... (public prefix)
     await db.query(`UPDATE tables SET qr_code = ? WHERE id = ?`, [
-      qrPath,
+      `/qrcodes/${fileName}`,
       newId,
     ]);
 
-    debugLog('QR Path Saved to DB');
+    await generateAllTableQR();
 
-    res.status(200).json({ id: newId, table_number, qr_code: qrPath });
+    res.status(200).json({
+      id: newId,
+      table_number,
+      qr_code: `/qrcodes/${fileName}`,
+    });
   } catch (error) {
     debugError('Create Table Failed', error);
     res.status(500).json({ message: 'Server error' });
@@ -83,20 +82,68 @@ export const deleteTable = async (req, res) => {
     debugLog('Table deleted from database', id);
 
     // Delete QR file
-    if (qrPath && fs.existsSync(qrPath)) {
-      try {
-        fs.unlinkSync(qrPath);
-        debugLog('QR File Deleted', qrPath);
-      } catch (err) {
-        debugError('QR File Delete Error', err);
+    if (qrPath) {
+      const fullPath = path.resolve(`public/${qrPath}`);
+      if (fs.existsSync(fullPath)) {
+        fs.unlinkSync(fullPath);
+        debugLog('QR File Deleted', fullPath);
+      } else {
+        debugLog('QR File NOT FOUND on disk', fullPath);
       }
-    } else {
-      debugLog('QR file does not exist or path empty', qrPath);
     }
 
     res.status(200).json({ message: 'Table deleted successfully' });
   } catch (error) {
     debugError('Delete Table Failed', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const regenerateTableQR = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const [rows] = await db.query(
+      'SELECT table_number FROM tables WHERE id = ?',
+      [id]
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({ message: 'Table not found' });
+    }
+
+    const table_number = rows[0].table_number;
+
+    const qrFolder = path.resolve('public/qrcodes');
+    if (!fs.existsSync(qrFolder)) {
+      fs.mkdirSync(qrFolder, { recursive: true });
+    }
+
+    const qrPath = path.join(qrFolder, `table-${table_number}.png`);
+
+    const qrData = `${process.env.BACKEND_URL.replace(
+      /\/$/,
+      ''
+    )}/api/sessions/scan/${table_number}`;
+
+    await QRCode.toFile(qrPath, qrData, {
+      width: 300,
+      errorCorrectionLevel: 'H',
+    });
+
+    const qrDbPath = `/qrcodes/table-${table_number}.png`;
+
+    await db.query('UPDATE tables SET qr_code = ? WHERE id = ?', [
+      qrDbPath,
+      id,
+    ]);
+
+    return res.status(200).json({
+      message: 'QR regenerated successfully',
+      qr_code: qrDbPath,
+    });
+  } catch (error) {
+    console.error('Regenerate Table QR Error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
