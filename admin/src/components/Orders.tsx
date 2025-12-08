@@ -5,6 +5,7 @@ import PrintReceipt from '../components/PrintReceipt';
 
 interface Order {
   id: number;
+  table_number: number;
   table_id: string;
   payment_status: 'unpaid' | 'paid' | 'canceled';
   total_amount: number;
@@ -96,24 +97,26 @@ export default function Orders() {
 
   return (
     <>
-      <h1 className="mb-4 text-3xl font-bold">Orders</h1>
+      <div className="flex justify-between ">
+        <h1 className="mb-4 text-3xl font-bold">Orders</h1>
 
-      {/* Filter Buttons */}
-      <div className="flex gap-2 mb-6">
-        {['all', 'unpaid', 'paid', 'canceled'].map((f) => (
-          <Button
-            key={f}
-            className={filter === f ? 'bg-primary' : ''}
-            onClick={() => setFilter(f as any)}
-          >
-            {f.charAt(0).toUpperCase() + f.slice(1)}
-          </Button>
-        ))}
+        {/* Filter Buttons */}
+        <div className="flex gap-2 mb-6">
+          {['all', 'unpaid', 'paid', 'canceled'].map((f) => (
+            <Button
+              key={f}
+              className={filter === f ? 'bg-primary' : ''}
+              onClick={() => setFilter(f as any)}
+            >
+              {f.charAt(0).toUpperCase() + f.slice(1)}
+            </Button>
+          ))}
+        </div>
       </div>
 
       <div className="flex gap-10">
         {/* Orders List */}
-        <div className="w-1/2 max-h-[820px] overflow-y-auto pr-2">
+        <div className="w-1/2 max-h-[820px] overflow-y-auto pr-4">
           {filteredOrders.length === 0 ? (
             <p className="text-gray-500">No orders found.</p>
           ) : (
@@ -137,7 +140,7 @@ export default function Orders() {
                           : 'text-gray-500'
                       }`}
                     >
-                      Table: {order.table_id}
+                      Table: {order.table_number}
                     </p>
                   </div>
 
@@ -185,7 +188,7 @@ export default function Orders() {
                     <tr key={item.id} className="border-b">
                       <td className="py-1 w-[60%]">{item.name}</td>
                       <td className="py-1 text-center w-[20%]">
-                        {item.quantity}
+                        {selectedOrder.table_number}
                       </td>
                       <td className="py-1 text-center w-[20%]">
                         {item.quantity}

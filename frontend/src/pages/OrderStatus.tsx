@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Link,
@@ -93,7 +93,15 @@ export default function TrackOrder() {
 
       setOrder((prev) => {
         if (!prev) return prev;
-        const update = updates.find((d) => d.tableId === prev.table_id);
+
+        console.log('Previous order state:', prev);
+        console.log('Socket updates:', updates);
+
+        // Match by table number (string) instead of tableId
+        const update = updates[0];
+
+        console.log('Matching update found:', update);
+
         if (!update) return prev;
 
         if (update.status === 'unserved' && prev.status === 'pending') {
@@ -114,8 +122,8 @@ export default function TrackOrder() {
     };
   }, [orderId]);
 
-  // COMPUTE STEP
-  const currentStep = (() => {
+  // COMPUTE STEP dynamically whenever order status changes
+  const currentStep = useMemo(() => {
     switch (order?.status) {
       case 'pending':
         return 0;
@@ -129,13 +137,19 @@ export default function TrackOrder() {
       default:
         return 0;
     }
-  })();
+  }, [order?.status]);
 
-  // CHECK IF CANCEL IS ALLOWED
+  useEffect(() => {
+    console.log('Order state changed:', order);
+  }, [order]);
+
+  useEffect(() => {
+    console.log('Current step recalculated:', currentStep);
+  }, [currentStep]);
+
   const canCancel =
-    order && order.payment_method === 'cash' && order.status === 'pending'; // not confirmed yet
+    order && order.payment_method === 'cash' && order.status === 'pending';
 
-  // HANDLE CANCEL ORDER
   const cancelOrder = async () => {
     if (!order) return;
 
@@ -146,10 +160,7 @@ export default function TrackOrder() {
 
     try {
       setIsCancelling(true);
-
       await api.put(`/orders/${order.id}/cancel`);
-
-      // SUCCESS
       setOrder((prev) => (prev ? { ...prev, status: 'cancelled' } : prev));
 
       setTimeout(() => {
@@ -157,9 +168,7 @@ export default function TrackOrder() {
       }, 1000);
     } catch (err: any) {
       const message = err?.response?.data?.message || 'Failed to cancel order.';
-
       toast.warning(message);
-
       if (message.includes('cannot be canceled')) {
         setOrder((prev) => (prev ? { ...prev, status: 'unserved' } : prev));
       }
@@ -208,12 +217,12 @@ export default function TrackOrder() {
           </div>
         </div>
 
-        <div className="flex items-center justify-center w-full gap-4 p-4">
-          {/* Cancel Order */}
+        {/* Action Buttons */}
+        <div className="flex items-center gap-4 p-4">
           {canCancel && (
             <div className="flex justify-end flex-1">
               <Button
-                className="w-full py-6"
+                className="w-full py-6 max-w-56"
                 disabled={isCancelling}
                 onClick={cancelOrder}
               >
@@ -222,17 +231,21 @@ export default function TrackOrder() {
             </div>
           )}
 
-          {/* View Receipt */}
-          <div className="flex justify-center flex-1">
+          <div
+            className={`flex flex-1 ${
+              canCancel ? 'justify-between' : 'justify-center'
+            }`}
+          >
             <Link
+              className="w-full max-w-56"
               to={`/receipt/${order.id}?table=${order.table_number}&token=${sessionToken}`}
-              className="w-full"
             >
               <Button className="w-full py-6">View Receipt</Button>
             </Link>
           </div>
         </div>
       </div>
+
       <Button
         variant="link"
         className="w-full"

@@ -109,7 +109,7 @@ export default function PaymentPage() {
           console.log('PayPal payment approved:', details);
 
           await api.post('/orders', {
-            table_id: table,
+            table_number: table,
             session_token: sessionToken,
             items: cart.map((i: MenuItem & { quantity: number }) => ({
               menu_id: i.id,
@@ -152,7 +152,7 @@ export default function PaymentPage() {
           ? 'unpaid'
           : 'paid';
       await api.post('/orders', {
-        table_id: table,
+        table_number: table,
         session_token: sessionToken,
         items: cart.map((i: MenuItem & { quantity: number }) => ({
           menu_id: i.id,

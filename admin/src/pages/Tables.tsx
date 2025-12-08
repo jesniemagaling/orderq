@@ -4,6 +4,7 @@ import Button from '../components/ui/Button';
 import Modal from '../components/ui/Modal';
 import { debounce } from 'lodash';
 import { adminSocket as socket } from '../lib/socket';
+import { toast } from 'react-toastify';
 
 interface OrderItem {
   name: string;
@@ -316,6 +317,68 @@ export default function Tables() {
     }
   };
 
+  const handleRegenerateAllQR = async () => {
+    const ok = confirm(
+      'Are you sure you want to regenerate all QR codes? This will overwrite existing QR codes.'
+    );
+    if (!ok) return;
+
+    try {
+      toast.info('Regenerating all QR codes...');
+
+      await api.post('/tables/qr/regenerate');
+      await fetchAllQR();
+
+      toast.success('All QR codes regenerated successfully!');
+    } catch (err) {
+      console.error('Failed to regenerate QR codes', err);
+      toast.error('Failed to regenerate QR codes');
+    }
+  };
+
+  const handleAddTable = async () => {
+    try {
+      const last = tables[tables.length - 1];
+      const newNumber = last ? Number(last.table_number) + 1 : 1;
+
+      const res = await api.post('/tables', {
+        table_number: String(newNumber),
+      });
+
+      const created = res.data;
+
+      try {
+        await api.post(`/tables/${created.id}/qr`);
+      } catch (qrErr) {
+        console.error('QR generation failed', qrErr);
+      }
+
+      await fetchTables();
+      await fetchAllQR();
+
+      toast.success(`Table #${newNumber} added successfully`);
+    } catch (err) {
+      console.error('Failed to add table:', err);
+      toast.error('Failed to add table');
+    }
+  };
+
+  const handleDeleteTable = async (tableId: number) => {
+    const ok = confirm('Are you sure you want to delete this table?');
+    if (!ok) return;
+
+    try {
+      await api.delete(`/tables/${tableId}`);
+      await fetchTables();
+      await fetchAllQR();
+
+      toast.success('Table deleted');
+    } catch (err) {
+      console.error('Delete failed:', err);
+      toast.error('Failed to delete table');
+    }
+  };
+
   if (loading) return <p>Loading tables...</p>;
 
   const getStatusColor = (status: string) => {
@@ -337,27 +400,37 @@ export default function Tables() {
     <div className="flex gap-10">
       {/* Tables list */}
       <div className="w-1/2">
-        <h1 className="mb-6 text-3xl font-bold">All Tables</h1>
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-3xl font-bold">All Tables</h1>
+
+          <div className="flex gap-2">
+            <Button onClick={handleAddTable}>Add New Table</Button>
+
+            <Button onClick={handleRegenerateAllQR}>Regenerate All QR</Button>
+          </div>
+        </div>
+
         {tables.length === 0 ? (
           <p className="text-gray-500">No tables found.</p>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 max-h-[820px] overflow-y-auto pr-4">
             {tables.map((table) => (
               <div
                 key={table.id}
-                onClick={() => handleTableClick(table)}
-                className={`relative cursor-pointer flex justify-between rounded-xl p-4 shadow transition ${
+                className={`relative flex justify-between items-center rounded-xl p-4 shadow transition ${
                   selectedTable?.id === table.id
                     ? 'bg-primary text-white'
                     : 'bg-white hover:bg-gray-50'
                 }`}
               >
-                <div>
+                <div
+                  className="flex-1 cursor-pointer"
+                  onClick={() => handleTableClick(table)}
+                >
                   <p className="text-lg font-medium">
                     Table #{table.table_number}
                   </p>
-                </div>
-                <div className="text-right">
+
                   <p
                     className={`text-sm font-medium ${
                       selectedTable?.id === table.id
@@ -370,6 +443,16 @@ export default function Tables() {
                       .replace(/\b\w/g, (l) => l.toUpperCase())}
                   </p>
                 </div>
+
+                <Button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteTable(table.id);
+                  }}
+                >
+                  Delete
+                </Button>
+
                 {(table.has_additional_order || table.has_canceled_order) && (
                   <span className="absolute w-3 h-3 bg-red-600 rounded-full top-1 right-1 animate-pulse" />
                 )}

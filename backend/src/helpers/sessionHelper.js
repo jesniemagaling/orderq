@@ -24,7 +24,7 @@ export const createOrReuseSession = async (table_number) => {
 
     const [activeSession] = await connection.query(
       `SELECT * FROM sessions 
-       WHERE table_id = ? AND is_active = 1 AND expires_at > NOW() LIMIT 1`,
+        WHERE table_id = ? AND is_active = 1 AND expires_at > NOW() LIMIT 1`,
       [table.id]
     );
 
@@ -45,7 +45,7 @@ export const createOrReuseSession = async (table_number) => {
 
     await connection.query(
       `INSERT INTO sessions (table_id, token, created_at, expires_at, is_active)
-       VALUES (?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 2 HOUR), 1)`,
+        VALUES (?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 2 HOUR), 1)`,
       [table.id, token]
     );
 

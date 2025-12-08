@@ -166,7 +166,7 @@ export default function KitchenOrders() {
         {combinedTables.length === 0 ? (
           <p className="text-gray-500">No tables found.</p>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 max-h-[820px] overflow-y-auto pr-4">
             {combinedTables.map((table) => (
               <div
                 key={table.id}

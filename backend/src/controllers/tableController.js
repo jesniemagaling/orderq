@@ -1,8 +1,120 @@
 import { db } from '../config/db.js';
 import { notifyTableStatus, notifyNewOrder } from '../../index.js';
+import { generateAllTableQR } from '../utils/generateTableQR.js';
+import { debugLog, debugError } from '../utils/logger.js';
+import fs from 'fs';
+import path from 'path';
+import QRCode from 'qrcode';
+
+// Create a new table with QR code generation
+export const createTable = async (req, res) => {
+  debugLog('Received Create Table Request', req.body);
+
+  try {
+    const { table_number } = req.body;
+
+    if (!table_number) {
+      debugError('Table number missing in request body');
+      return res.status(400).json({ message: 'table_number is required' });
+    }
+
+    // Insert new table
+    const [result] = await db.query(
+      `INSERT INTO tables (table_number, status) VALUES (?, 'available')`,
+      [table_number]
+    );
+
+    const newId = result.insertId;
+    debugLog('Table inserted in DB', { newId, table_number });
+
+    // Prepare QR path
+    const qrFolder = path.join('uploads', 'qrcodes');
+    if (!fs.existsSync(qrFolder)) {
+      fs.mkdirSync(qrFolder, { recursive: true });
+      debugLog('Created QR folder', qrFolder);
+    }
+
+    const qrPath = path.join(qrFolder, `table-${newId}.png`);
+
+    const qrData = `${process.env.FRONTEND_URL}/order?table=${newId}`;
+    debugLog('QR Data to Encode', qrData);
+
+    // Generate QR
+    await QRCode.toFile(qrPath, qrData);
+    debugLog('QR Generated Successfully', qrPath);
+
+    // Save to DB
+    await db.query(`UPDATE tables SET qr_code = ? WHERE id = ?`, [
+      qrPath,
+      newId,
+    ]);
+
+    debugLog('QR Path Saved to DB');
+
+    res.status(200).json({ id: newId, table_number, qr_code: qrPath });
+  } catch (error) {
+    debugError('Create Table Failed', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Delete a table and its QR code file
+export const deleteTable = async (req, res) => {
+  debugLog('Received Delete Table Request', req.params);
+
+  try {
+    const { id } = req.params;
+
+    // Fetch table with QR path
+    const [rows] = await db.query(`SELECT qr_code FROM tables WHERE id = ?`, [
+      id,
+    ]);
+
+    if (!rows.length) {
+      debugError('Table not found for deletion', { id });
+      return res.status(404).json({ message: 'Table not found' });
+    }
+
+    const qrPath = rows[0].qr_code;
+    debugLog('Found table & QR', { id, qrPath });
+
+    // Delete DB row
+    await db.query(`DELETE FROM tables WHERE id = ?`, [id]);
+    debugLog('Table deleted from database', id);
+
+    // Delete QR file
+    if (qrPath && fs.existsSync(qrPath)) {
+      try {
+        fs.unlinkSync(qrPath);
+        debugLog('QR File Deleted', qrPath);
+      } catch (err) {
+        debugError('QR File Delete Error', err);
+      }
+    } else {
+      debugLog('QR file does not exist or path empty', qrPath);
+    }
+
+    res.status(200).json({ message: 'Table deleted successfully' });
+  } catch (error) {
+    debugError('Delete Table Failed', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const regenerateAllQR = async (req, res) => {
+  try {
+    await generateAllTableQR();
+    res.status(200).json({ message: 'All QR codes regenerated successfully' });
+  } catch (error) {
+    console.error('Regenerate QR Error:', error);
+    res.status(500).json({ message: 'Failed to regenerate QR codes' });
+  }
+};
 
 // Get all tables with their current status and total unpaid amount
 export const getAllTables = async (req, res) => {
+  debugLog('Fetching all tables');
+
   try {
     const [tables] = await db.query(`
       SELECT 
@@ -21,21 +133,26 @@ export const getAllTables = async (req, res) => {
       ORDER BY t.table_number ASC
     `);
 
+    debugLog('Tables fetched', tables.length);
+
     res.status(200).json(tables);
   } catch (error) {
-    console.error('Error fetching tables:', error);
+    debugError('Error fetching tables', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
 
 // Update a table's status manually
 export const updateTableStatus = async (req, res) => {
+  debugLog('Update Table Status Request', req.params, req.body);
+
   const { id } = req.params;
   const { status } = req.body;
 
   const validStatuses = ['available', 'occupied', 'in_progress', 'served'];
 
   if (!validStatuses.includes(status)) {
+    debugError('Invalid status', status);
     return res.status(400).json({ message: 'Invalid table status' });
   }
 
@@ -46,15 +163,16 @@ export const updateTableStatus = async (req, res) => {
     );
 
     if (result.affectedRows === 0) {
+      debugError('Table not found', id);
       return res.status(404).json({ message: 'Table not found' });
     }
 
-    // Emit WebSocket notification for live UI update
+    debugLog('Status updated successfully', { id, status });
     notifyTableStatus(id, status);
 
     res.status(200).json({ message: `Table status updated to ${status}` });
   } catch (error) {
-    console.error('Error updating table status:', error);
+    debugError('Error updating table status', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

@@ -351,7 +351,9 @@ export default function Overview() {
                       <td className="py-3 pr-3 text-center">
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-semibold inline-block min-w-[75px] text-center ${
-                            o.status === 'unserved'
+                            o.status === 'pending'
+                              ? 'bg-gray-100 text-gray-700'
+                              : o.status === 'unserved'
                               ? 'bg-yellow-100 text-yellow-700'
                               : o.status === 'served'
                               ? 'bg-blue-100 text-blue-700'

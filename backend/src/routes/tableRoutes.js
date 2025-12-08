@@ -1,5 +1,8 @@
 import express from 'express';
 import {
+  createTable,
+  deleteTable,
+  regenerateAllQR,
   getAllTables,
   updateTableStatus,
   getTableDetails,
@@ -9,6 +12,9 @@ import {
 
 const router = express.Router();
 
+router.post('/', createTable);
+router.post('/qr/regenerate', regenerateAllQR);
+router.delete('/:id', deleteTable);
 router.get('/', getAllTables);
 router.get('/qr/all', getAllTableQR);
 router.get('/:table_id/details', getTableDetails);

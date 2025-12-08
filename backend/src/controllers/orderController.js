@@ -9,7 +9,7 @@ import {
 // Create a new order
 export const createOrder = async (req, res) => {
   const {
-    table_id,
+    table_number,
     session_token,
     items,
     payment_method,
@@ -17,7 +17,7 @@ export const createOrder = async (req, res) => {
     payment_reference,
   } = req.body;
 
-  if (!table_id || !session_token || !items || items.length === 0) {
+  if (!table_number || !session_token || !items || items.length === 0) {
     return res.status(400).json({ message: 'Missing order details' });
   }
 
@@ -38,6 +38,19 @@ export const createOrder = async (req, res) => {
     }
 
     const session_id = sessionRows[0].id;
+
+    // Get actual table_id from table_number
+    const [tableRows] = await connection.query(
+      'SELECT id FROM tables WHERE table_number = ?',
+      [table_number]
+    );
+
+    if (tableRows.length === 0) {
+      await connection.rollback();
+      return res.status(400).json({ message: 'Invalid table number' });
+    }
+
+    const table_id = tableRows[0].id;
 
     // Compute total amount
     const total_amount = items.reduce(
@@ -60,7 +73,7 @@ export const createOrder = async (req, res) => {
 
     const orderId = orderResult.insertId;
 
-    // Insert order items and update stocks (your existing code here)
+    // Insert order items and update stocks
     for (const item of items) {
       await connection.query(
         `INSERT INTO order_items (order_id, menu_id, quantity, price)
@@ -100,7 +113,7 @@ export const createOrder = async (req, res) => {
         [orderId, payment_method, paymentRef, total_amount, 'paid']
       );
     } else if (payment_method === 'cash') {
-      // For cash, no external payment_reference needed, mark payment as unpaid by default
+      // For cash, mark payment as unpaid by default
       await connection.query(
         `INSERT INTO payments (order_id, payment_method, amount, status)
           VALUES (?, 'cash', ?, 'unpaid')`,
@@ -109,15 +122,6 @@ export const createOrder = async (req, res) => {
     }
 
     await connection.commit();
-
-    // Fetch table number
-    const [tableRows] = await connection.query(
-      'SELECT table_number FROM tables WHERE id = ?',
-      [table_id]
-    );
-    const table_number = tableRows.length
-      ? tableRows[0].table_number
-      : `T${table_id}`;
 
     // Notify frontend
     notifyNewOrder(table_id, {
@@ -134,13 +138,13 @@ export const createOrder = async (req, res) => {
       message: 'Order created successfully (awaiting confirmation)',
       orderId,
       table_id,
+      table_number,
       total_amount,
       items,
     });
   } catch (error) {
     await connection.rollback();
 
-    // Debug logs
     console.error('Error creating order:', error);
     console.error('SQL Error Message:', error.sqlMessage);
     console.error('Incoming request body:', req.body);
