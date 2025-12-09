@@ -1,4 +1,12 @@
-import { BarChart2, ClipboardList, Layers, LogOut, Table } from 'lucide-react';
+import {
+  BarChart2,
+  ClipboardList,
+  DollarSign,
+  Layers,
+  LogOut,
+  Table,
+  TrendingUp,
+} from 'lucide-react';
 import SidebarItem from './SidebarItem';
 
 interface SidebarProps {
@@ -11,7 +19,7 @@ export default function Sidebar({ role }: SidebarProps) {
 
   const adminLinks = [
     { to: '/admin/overview', label: 'Overview', icon: <BarChart2 size={20} /> },
-    { to: '/admin/sales', label: 'Sales', icon: <ClipboardList size={20} /> },
+    { to: '/admin/sales', label: 'Sales', icon: <TrendingUp size={20} /> },
     { to: '/admin/orders', label: 'Orders', icon: <ClipboardList size={20} /> },
     { to: '/admin/menu', label: 'Menu', icon: <Layers size={20} /> },
   ];

@@ -52,7 +52,7 @@ export default function SalesPerDay() {
 
   useEffect(() => {
     fetchData();
-  }, [start, end]);
+  }, []);
 
   return (
     <div className="p-6 shadow-lg bg-gray-50 rounded-xl">
