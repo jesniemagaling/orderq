@@ -5,9 +5,10 @@ import { useCart } from '@/context/CartContext';
 
 interface HomeMenuCardProps {
   item: MenuItem;
+  onClick?: () => void;
 }
 
-export default function HomeMenuCard({ item }: HomeMenuCardProps) {
+export default function HomeMenuCard({ item, onClick }: HomeMenuCardProps) {
   const { id, name, price, status } = item;
   const { addToCart } = useCart();
 
@@ -17,27 +18,37 @@ export default function HomeMenuCard({ item }: HomeMenuCardProps) {
   };
 
   return (
-    <div className="relative w-[120px] h-[162px] sm:w-[140px] sm:h-[200px] bg-white rounded-3xl shadow-lg overflow-hidden">
-      <Link to={`/menu/${id}`}>
-        <div className="relative bg-deep-red-gradient h-[76px] sm:h-[90px] flex justify-center items-end">
-          <img
-            src={item.homeImage}
-            alt={item.name}
-            className="w-[40px] sm:w-[60px] -mb-4 sm:-mb-6 z-10"
-          />
-        </div>
+    <div
+      className="relative w-[120px] h-[162px] sm:w-[140px] sm:h-[200px] bg-white rounded-3xl shadow-lg overflow-hidden cursor-pointer"
+      onClick={onClick}
+    >
+      <div className="relative bg-deep-red-gradient h-[76px] sm:h-[90px] flex justify-center items-end">
+        <img
+          src={item.image_url}
+          alt={item.name}
+          className="w-[40px] sm:w-[60px] -mb-4 sm:-mb-6 z-10"
+        />
+      </div>
 
-        <div className="flex flex-col items-start px-3 pb-4 text-left">
-          <h3 className="mt-6 font-normal text-black sm:mt-10 heading-3">
-            {name}
-          </h3>
-          <p className="mt-1 font-bold text-yellow-500 heading-3">₱ {price}</p>
-        </div>
-      </Link>
+      <div className="flex flex-col items-start px-3 pb-4 text-left">
+        <h3
+          className="mt-6 font-normal text-black sm:mt-10 heading-3"
+          title={name}
+        >
+          {name.split(' ')[0]}
+        </h3>
+        <p className="mt-1 font-bold text-yellow-500 heading-3">
+          ₱ {Number(price) % 1 === 0 ? Number(price) : Number(price).toFixed(2)}
+        </p>
+      </div>
+
       {status ? (
         <button
           className="absolute bottom-0 right-0 flex items-center justify-center h-8 sm:h-10 sm:w-7.5 text-lg text-white transition bg-[#B71E2B] bg-[linear-gradient(90deg,rgba(183,30,43,0.9)_40%,rgba(196,45,58,1)_100%)] shadow-md w-7 rounded-tl-2xl hover:bg-red-500"
-          onClick={handleAddToCart}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleAddToCart();
+          }}
         >
           <svg
             className="mr-0.5"
