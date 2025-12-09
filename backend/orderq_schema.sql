@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS menu_history (
 -- TABLES TABLE (RESTAURANT TABLES)
 CREATE TABLE IF NOT EXISTS tables (
   id INT NOT NULL AUTO_INCREMENT,
-  table_number VARCHAR(10) NOT NULL UNIQUE,
+  table_number INT NOT NULL UNIQUE,
   status ENUM('available','occupied','in_progress','served') DEFAULT 'available',
   qr_code VARCHAR(255),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
