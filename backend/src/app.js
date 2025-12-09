@@ -6,6 +6,7 @@ import menuRoutes from './routes/menuRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import sessionRoutes from './routes/sessionRoutes.js';
 import tableRoutes from './routes/tableRoutes.js';
+import salesRoutes from './routes/salesRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import paypalRoutes from './routes/paypalRoutes.js';
 import path from 'path';
@@ -78,6 +79,7 @@ app.use('/api/menu', menuRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/tables', tableRoutes);
+app.use('/api/sales', salesRoutes);
 app.use('/api/paypal', paypalRoutes);
 
 // STATIC FILES

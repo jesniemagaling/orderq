@@ -451,8 +451,8 @@ export const markOrderAsServed = async (req, res) => {
     // Mark all unserved orders for that table as served
     await db.query(
       `UPDATE orders 
-         SET status = 'served' 
-       WHERE table_id = ? AND status = 'unserved'`,
+          SET status = 'served' 
+        WHERE table_id = ? AND status = 'unserved'`,
       [tableId]
     );
 
@@ -461,8 +461,8 @@ export const markOrderAsServed = async (req, res) => {
       `SELECT 
           SUM(CASE WHEN status = 'unserved' THEN 1 ELSE 0 END) AS unserved_count,
           SUM(CASE WHEN status = 'served' THEN 1 ELSE 0 END) AS served_count
-       FROM orders 
-       WHERE table_id = ?`,
+        FROM orders 
+        WHERE table_id = ?`,
       [tableId]
     );
 

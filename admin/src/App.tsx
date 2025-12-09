@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Login from './pages/login';
 import MainLayout from './layouts/MainLayout';
 import Overview from './pages/Overview';
+import Sales from './pages/Sales';
 import Orders from './components/Orders';
 import Menu from './pages/Menu';
 import AddMenu from './components/AddMenu';
@@ -21,6 +22,7 @@ export default function App() {
         <Route element={<MainLayout />}>
           {/* Admin */}
           <Route path="/admin/overview" element={<Overview />} />
+          <Route path="/admin/sales" element={<Sales />} />
           <Route path="/admin/orders" element={<Orders />} />
           <Route path="/admin/menu" element={<Menu />} />
           <Route path="/admin/add-menu" element={<AddMenu />} />

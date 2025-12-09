@@ -11,6 +11,7 @@ export default function Sidebar({ role }: SidebarProps) {
 
   const adminLinks = [
     { to: '/admin/overview', label: 'Overview', icon: <BarChart2 size={20} /> },
+    { to: '/admin/sales', label: 'Sales', icon: <ClipboardList size={20} /> },
     { to: '/admin/orders', label: 'Orders', icon: <ClipboardList size={20} /> },
     { to: '/admin/menu', label: 'Menu', icon: <Layers size={20} /> },
   ];
@@ -52,8 +53,8 @@ export default function Sidebar({ role }: SidebarProps) {
       {/* Logo */}
       <div>
         <div className="flex items-center gap-2 mb-8">
-          <img src="/orderq-logo.svg" alt="OrderQ" className="h-8 w-8" />
-          <span className="font-semibold text-lg">OrderQ</span>
+          <img src="/orderq-logo.svg" alt="OrderQ" className="w-8 h-8" />
+          <span className="text-lg font-semibold">OrderQ</span>
         </div>
 
         {/* Navigation Links */}
