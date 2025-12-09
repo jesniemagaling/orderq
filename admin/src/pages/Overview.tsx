@@ -1,18 +1,21 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Bell, DollarSign, Users, Package } from 'lucide-react';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  ResponsiveContainer,
-  Tooltip,
-  CartesianGrid,
-} from 'recharts';
-import { format } from 'date-fns';
 import api from '../lib/axios';
 import { toast } from 'react-toastify';
 import { adminSocket } from '../lib/socket';
+
+// CHART.JS (BAR CONFIG)
+import {
+  Chart as ChartJS,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+import { Bar } from 'react-chartjs-2';
+
+ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend);
 
 type Order = {
   id: number;
@@ -35,225 +38,12 @@ export default function Overview() {
   const [todayRevenue, setTodayRevenue] = useState(0);
   const [lowStocksCount, setLowStocksCount] = useState(0);
 
-  // lists
   const [latestOrders, setLatestOrders] = useState<Order[]>([]);
   const [salesSeries, setSalesSeries] = useState<
-    { time: string; value: number }[]
+    { hour: number; value: number }[]
   >([]);
   const [topSelling, setTopSelling] = useState<TopItem[]>([]);
-  const [salesInterval, setSalesInterval] = useState<
-    'hourly' | 'weekly' | 'monthly'
-  >('hourly');
-
-  useEffect(() => {
-    const refreshDashboard = async () => {
-      setLoading(true);
-
-      try {
-        // Define today's date range
-        const today = new Date();
-        const start = `${today.toISOString().slice(0, 10)} 00:00:00`;
-        const end = `${today.toISOString().slice(0, 10)} 23:59:59`;
-
-        // Define all endpoints
-        const endpoints = [
-          '/tables',
-          '/orders?limit=10&sort=desc',
-          '/orders',
-          `/orders/sales-graph?interval=${salesInterval}`,
-          '/menu/top-selling',
-          `/orders/revenue?start=${start}&end=${end}`,
-          '/menu',
-          '/orders/active-count',
-        ];
-
-        // Fetch all data in parallel
-        const results = await Promise.allSettled(
-          endpoints.map((url) => api.get(url))
-        );
-
-        const [
-          tablesRes,
-          latestOrdersRes,
-          allOrdersRes,
-          salesRes,
-          topItemsRes,
-          revenueRes,
-          menuRes,
-          activeOrdersRes,
-        ] = results;
-
-        // Tables
-        if (tablesRes.status === 'fulfilled') {
-          const tables = tablesRes.value.data as any[];
-          setTablesTotal(tables.length);
-          setTablesOccupied(
-            tables.filter((t) => t.status !== 'available').length
-          );
-        } else {
-          setTablesTotal(13);
-          setTablesOccupied(5);
-        }
-
-        // Active Orders Count
-        if (allOrdersRes.status === 'fulfilled') {
-          const activeCount = allOrdersRes.value.data.filter(
-            (o: any) =>
-              o.status === 'pending' ||
-              o.status === 'in_progress' ||
-              o.status === 'unserved'
-          ).length;
-          setActiveOrdersCount(activeCount);
-        } else {
-          setActiveOrdersCount(8);
-        }
-
-        // Latest Orders
-        if (latestOrdersRes.status === 'fulfilled') {
-          setLatestOrders(latestOrdersRes.value.data || []);
-        } else {
-          setLatestOrders([
-            {
-              id: 13,
-              table_number: '09',
-              name: 'Kim Sabu',
-              total_amount: 1305,
-              status: 'in_progress',
-              created_at: new Date().toISOString(),
-            },
-            {
-              id: 5,
-              table_number: '13',
-              name: 'Emma Brown',
-              total_amount: 1305,
-              status: 'served',
-              created_at: new Date().toISOString(),
-            },
-          ]);
-        }
-
-        // Menu Stocks
-        if (menuRes.status === 'fulfilled') {
-          const lowStockItems = menuRes.value.data.filter(
-            (m: any) => m.stocks <= 10
-          );
-          setLowStocksCount(lowStockItems.length);
-        } else {
-          setLowStocksCount(5);
-        }
-
-        // Today's Revenue
-        if (revenueRes.status === 'fulfilled') {
-          const rows = revenueRes.value.data;
-          setTodayRevenue(
-            Array.isArray(rows) && rows.length > 0
-              ? Number(rows[0].total || 0)
-              : 0
-          );
-        } else {
-          setTodayRevenue(0);
-        }
-
-        // Sales Series
-        const generateFallbackSales = () => {
-          if (salesInterval === 'hourly') {
-            return [10, 11, 12, 13, 14, 15, 16, 17, 18].map((h) => ({
-              time:
-                h === 0
-                  ? '12AM'
-                  : h < 12
-                  ? `${h}AM`
-                  : h === 12
-                  ? '12PM'
-                  : `${h - 12}PM`,
-              value: Math.round(5000 + Math.random() * 15000),
-            }));
-          } else if (salesInterval === 'weekly') {
-            const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-            return days.map((d) => ({
-              time: d,
-              value: Math.round(10000 + Math.random() * 20000),
-            }));
-          } else if (salesInterval === 'monthly') {
-            const months = [
-              'Jan',
-              'Feb',
-              'Mar',
-              'Apr',
-              'May',
-              'Jun',
-              'Jul',
-              'Aug',
-              'Sep',
-              'Oct',
-              'Nov',
-              'Dec',
-            ];
-            return months.map((m) => ({
-              time: m,
-              value: Math.round(50000 + Math.random() * 100000),
-            }));
-          }
-          return [];
-        };
-
-        if (
-          salesRes.status === 'fulfilled' &&
-          Array.isArray(salesRes.value.data)
-        ) {
-          setSalesSeries(
-            salesRes.value.data.map((s: any) => ({
-              time: s.time,
-              value: Number(s.value || 0),
-            }))
-          );
-        } else {
-          setSalesSeries(generateFallbackSales());
-        }
-
-        // Top Selling
-        if (topItemsRes.status === 'fulfilled') {
-          setTopSelling(topItemsRes.value.data || []);
-        } else {
-          setTopSelling([
-            { name: 'Burgers', sold: 1658, delta: 1.2 },
-            { name: 'Chicken', sold: 1658, delta: 0.8 },
-            { name: 'Pizza', sold: 100, delta: -0.4 },
-            { name: 'Salad', sold: 1658, delta: 0.2 },
-          ]);
-        }
-      } catch (err) {
-        console.error(err);
-        toast.error('Failed to load dashboard data');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    // Socket Realtime Updates
-    adminSocket.on('connect', () =>
-      console.log('[Overview] Connected to socket:', adminSocket.id)
-    );
-    adminSocket.on('tableStatusUpdate', refreshDashboard);
-    adminSocket.on('newOrder', refreshDashboard);
-    adminSocket.on('disconnect', () =>
-      console.log('[Overview] Disconnected from socket')
-    );
-
-    // Initial load
-    refreshDashboard();
-
-    // Cleanup
-    return () => {
-      adminSocket.off('tableStatusUpdate', refreshDashboard);
-      adminSocket.off('newOrder', refreshDashboard);
-    };
-  }, [salesInterval]);
-
-  const occupancyText = useMemo(
-    () => `${tablesOccupied}/${tablesTotal}`,
-    [tablesOccupied, tablesTotal]
-  );
+  const [salesInterval] = useState<'hourly' | 'weekly' | 'monthly'>('hourly');
 
   const formatCurrency = (value: number) =>
     value.toLocaleString(undefined, {
@@ -262,12 +52,170 @@ export default function Overview() {
       minimumFractionDigits: 0,
     });
 
+  const occupancyText = useMemo(
+    () => `${tablesOccupied}/${tablesTotal}`,
+    [tablesOccupied, tablesTotal]
+  );
+
+  useEffect(() => {
+    const refreshDashboard = async () => {
+      setLoading(true);
+      try {
+        const today = new Date();
+        const date = today.toISOString().slice(0, 10);
+
+        const [
+          tablesRes,
+          latestOrdersRes,
+          allOrdersRes,
+          topItemsRes,
+          summaryRes,
+          menuRes,
+          hourlyRes,
+        ] = await Promise.allSettled([
+          api.get('/tables'),
+          api.get('/orders?limit=10&sort=desc'),
+          api.get('/orders'),
+          api.get('/menu/top-selling'),
+          api.get(`/sales/summary?start=${date}&end=${date}`),
+          api.get('/menu'),
+          api.get('/sales/hourly-heatmap', { params: { date } }),
+        ]);
+
+        if (tablesRes.status === 'fulfilled') {
+          const tables = tablesRes.value.data;
+          setTablesTotal(tables.length);
+          setTablesOccupied(
+            tables.filter((t: any) => t.status !== 'available').length
+          );
+        }
+
+        if (latestOrdersRes.status === 'fulfilled')
+          setLatestOrders(latestOrdersRes.value.data || []);
+
+        if (allOrdersRes.status === 'fulfilled') {
+          const activeCount = allOrdersRes.value.data.filter((o: any) =>
+            ['pending', 'in_progress', 'unserved'].includes(o.status)
+          ).length;
+          setActiveOrdersCount(activeCount);
+        }
+
+        if (menuRes.status === 'fulfilled') {
+          const lowStockItems = menuRes.value.data.filter(
+            (m: any) => m.stocks <= 10
+          );
+          setLowStocksCount(lowStockItems.length);
+        }
+
+        if (summaryRes.status === 'fulfilled') {
+          const d = summaryRes.value.data;
+          setTodayRevenue(Number(d?.gross_sales || 0));
+        }
+
+        if (hourlyRes.status === 'fulfilled') {
+          const formatted = hourlyRes.value.data.map((h: any) => ({
+            hour: h.hour,
+            value: Number(h.total_sales || 0),
+          }));
+          setSalesSeries(formatted);
+        }
+
+        if (topItemsRes.status === 'fulfilled')
+          setTopSelling(topItemsRes.value.data || []);
+      } catch (err) {
+        console.error(err);
+        toast.error('Failed to load dashboard data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    adminSocket.on('tableStatusUpdate', refreshDashboard);
+    adminSocket.on('newOrder', refreshDashboard);
+    refreshDashboard();
+
+    return () => {
+      adminSocket.off('tableStatusUpdate', refreshDashboard);
+      adminSocket.off('newOrder', refreshDashboard);
+    };
+  }, []);
+
+  /*
+  const getPaddedSalesSeries = () => {
+    if (!salesSeries.length) return [];
+
+    if (salesSeries.length >= 3) return salesSeries;
+
+    const firstHour = salesSeries[0].hour;
+    const lastHour = salesSeries[salesSeries.length - 1].hour;
+
+    const paddingBefore = { hour: (firstHour - 1 + 24) % 24, value: 0 };
+    const paddingAfter = { hour: (lastHour + 1) % 24, value: 0 };
+
+    if (salesSeries.length === 1) {
+      return [paddingBefore, salesSeries[0], paddingAfter];
+    }
+
+    if (salesSeries.length === 2) {
+      return [paddingBefore, ...salesSeries, paddingAfter];
+    }
+
+    return salesSeries;
+  };
+  */
+
+  const getFull24HourSeries = () => {
+    const fullHours = Array.from({ length: 24 }, (_, i) => i);
+
+    return fullHours.map((h) => {
+      const found = salesSeries.find((s) => s.hour === h);
+      return {
+        hour: h,
+        value: found ? found.value : 0,
+      };
+    });
+  };
+
+  const paddedSalesSeries = getFull24HourSeries();
+
+  const chartData = {
+    labels: paddedSalesSeries.map((s) => {
+      const localHour = (s.hour + 8) % 24;
+      const suffix = localHour >= 12 ? 'PM' : 'AM';
+      const hour12 = localHour % 12 === 0 ? 12 : localHour % 12;
+      return `${hour12}:00 ${suffix}`;
+    }),
+    datasets: [
+      {
+        label: 'Hourly Sales',
+        data: paddedSalesSeries.map((s) => s.value),
+        backgroundColor: '#6e0b13',
+        borderRadius: 6,
+      },
+    ],
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: true } },
+    scales: {
+      x: {
+        barPercentage: 0.3,
+        categoryPercentage: 0.5,
+        ticks: { autoSkip: true, maxTicksLimit: 12, maxRotation: 0 },
+      },
+      y: { beginAtZero: true },
+    },
+  };
+
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">Overview</h1>
 
       {/* KPI cards */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+        {/* Occupancy */}
         <div className="flex items-center justify-between p-5 bg-white rounded-lg shadow-sm">
           <div>
             <p className="text-sm text-gray-500">Occupancy</p>
@@ -278,6 +226,7 @@ export default function Overview() {
           </div>
         </div>
 
+        {/* Active Orders */}
         <div className="flex items-center justify-between p-5 bg-white rounded-lg shadow-sm">
           <div>
             <p className="text-sm text-gray-500">Active Orders</p>
@@ -288,6 +237,7 @@ export default function Overview() {
           </div>
         </div>
 
+        {/* Today's Revenue */}
         <div className="flex items-center justify-between p-5 bg-white rounded-lg shadow-sm">
           <div>
             <p className="text-sm text-gray-500">Today's Revenue</p>
@@ -300,6 +250,7 @@ export default function Overview() {
           </div>
         </div>
 
+        {/* Low Stocks */}
         <div className="flex items-center justify-between p-5 bg-white rounded-lg shadow-sm">
           <div>
             <p className="text-sm text-gray-500">Low Stocks Menu</p>
@@ -311,21 +262,21 @@ export default function Overview() {
         </div>
       </div>
 
-      {/* Main content grid */}
+      {/* Main grid */}
       <div className="grid items-stretch grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* left: latest orders */}
+        {/* Latest Orders */}
         <div className="flex flex-col h-full p-6 bg-white rounded-lg shadow-sm lg:col-span-2">
           <h2 className="mb-4 text-lg font-semibold">Latest Orders</h2>
 
-          <div className="flex-1 overflow-y-auto">
-            <table className="w-full text-sm">
-              <thead className="sticky top-0 text-xs font-medium text-gray-600 bg-white border-b">
+          <div className="flex-1 overflow-x-auto rounded-lg shadow-inner">
+            <table className="w-full text-sm table-auto">
+              <thead className="sticky top-0 text-xs font-medium text-white border-b bg-primary">
                 <tr>
-                  <th className="py-2 pl-3 text-left w-[15%]">Order#</th>
-                  <th className="py-2 text-left w-[15%]">Time</th>
-                  <th className="py-2 text-left w-[15%]">Table</th>
-                  <th className="py-2 text-right w-[5%] pr-6">Amount</th>
-                  <th className="py-2 text-center w-[20%] pr-3">Status</th>
+                  <th className="py-2 pr-2 pl-8 text-left w-[10%]">Order#</th>
+                  <th className="py-2 pr-3 pl-6 text-left w-[15%]">Time</th>
+                  <th className="py-2 px-3 text-left w-[10%]">Table</th>
+                  <th className="py-2 px-3 text-right w-[10%]">Amount</th>
+                  <th className="py-2 px-3 text-center w-[20%]">Status</th>
                 </tr>
               </thead>
 
@@ -336,19 +287,35 @@ export default function Overview() {
                       key={o.id}
                       className="transition-colors duration-150 hover:bg-gray-50"
                     >
-                      <td className="py-3 pl-3 text-gray-700">{o.id}</td>
-                      <td className="py-3 text-gray-600">
+                      {/* Order ID */}
+                      <td className="px-3 pl-8 pr-3 text-left text-gray-700">
+                        {o.id}
+                      </td>
+
+                      {/* Time */}
+                      <td className="px-3 py-3 text-left text-gray-600">
                         {o.created_at
-                          ? format(new Date(o.created_at), 'HH:mm')
+                          ? new Date(o.created_at).toLocaleTimeString('en-US', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              hour12: true,
+                              timeZone: 'Asia/Manila',
+                            })
                           : '-'}
                       </td>
-                      <td className="py-3 text-left text-gray-700">
+
+                      {/* Table */}
+                      <td className="px-3 py-3 text-left text-gray-700">
                         {o.table_number || o.table_id || '-'}
                       </td>
-                      <td className="py-3 pr-6 font-medium text-center text-gray-800">
+
+                      {/* Amount */}
+                      <td className="px-3 py-3 font-medium text-right text-gray-800">
                         {formatCurrency(Number(o.total_amount || 0))}
                       </td>
-                      <td className="py-3 pr-3 text-center">
+
+                      {/* Status */}
+                      <td className="px-3 py-3 text-center">
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-semibold inline-block min-w-[75px] text-center ${
                             o.status === 'pending'
@@ -363,10 +330,8 @@ export default function Overview() {
                           }`}
                         >
                           {o.status
-                            ? o.status
-                                .replace('_', ' ')
-                                .replace(/\b\w/g, (c) => c.toUpperCase())
-                            : '—'}
+                            ?.replace('_', ' ')
+                            .replace(/\b\w/g, (c) => c.toUpperCase()) || '—'}
                         </span>
                       </td>
                     </tr>
@@ -383,66 +348,19 @@ export default function Overview() {
           </div>
         </div>
 
-        {/* right column: charts & top sellers */}
+        {/* RIGHT COLUMN */}
         <div className="flex flex-col h-full space-y-6">
+          {/* Hourly Sales Chart (BAR) */}
           <div className="flex-1 p-6 bg-white rounded-lg shadow-sm">
-            <div className="flex items-center justify-between gap-2 mb-4">
-              <h3 className="font-semibold">Sales Performance</h3>
-              <select
-                value={salesInterval}
-                onChange={(e) =>
-                  setSalesInterval(
-                    e.target.value as 'hourly' | 'weekly' | 'monthly'
-                  )
-                }
-                className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#820D17]/40"
-              >
-                <option value="hourly">Hourly</option>
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
-              </select>
-            </div>
-
-            <div className="h-[240px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={salesSeries}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                  <XAxis
-                    dataKey="time"
-                    tick={{ fontSize: 12 }}
-                    interval={0}
-                    padding={{ left: 30, right: 30 }}
-                  />
-                  <YAxis hide domain={['auto', 'auto']} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#fff',
-                      borderRadius: '6px',
-                      border: '1px solid #eee',
-                    }}
-                    formatter={(value: number) => [
-                      `₱${value.toLocaleString()}`,
-                      'Sales',
-                    ]}
-                    labelFormatter={(label) => `Time: ${label}`}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="value"
-                    stroke="#820D17"
-                    strokeWidth={3}
-                    dot={{ r: 4 }}
-                    activeDot={{ r: 6, fill: '#820D17', stroke: '#fff' }}
-                    animationDuration={800}
-                    animationEasing="ease-in-out"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+            <h3 className="mb-2 font-semibold">Hourly Sales Today</h3>
+            <div className="w-full h-64">
+              <Bar data={chartData} options={chartOptions} />
             </div>
           </div>
 
+          {/* Top Selling Items */}
           <div className="flex-1 p-6 overflow-y-auto bg-white rounded-lg shadow-sm">
-            <h3 className="mb-4 font-semibold">Top selling items</h3>
+            <h3 className="mb-4 font-semibold">Top Selling Items</h3>
             <ul className="space-y-3">
               {topSelling.map((t, i) => (
                 <li key={i} className="flex items-center justify-between">

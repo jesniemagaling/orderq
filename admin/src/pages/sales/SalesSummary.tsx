@@ -75,6 +75,16 @@ export default function SalesSummary() {
   const capitalize = (str: string) =>
     str.charAt(0).toUpperCase() + str.slice(1);
 
+  const isMoney = (key: string) =>
+    [
+      'gross_sales',
+      'cash_sales',
+      'gcash_sales',
+      'paypal_sales',
+      'canceled_amount',
+      'avg_order_value',
+    ].includes(key);
+
   return (
     <div className="p-6 shadow-lg bg-gray-50 rounded-xl">
       {/* Filters */}
@@ -125,9 +135,9 @@ export default function SalesSummary() {
                 {capitalize(key.replace(/_/g, ' '))}
               </p>
               <p className="mt-1 text-2xl font-bold text-gray-800">
-                ₱
+                {isMoney(key) ? '₱' : ''}
                 {Number(val).toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
+                  minimumFractionDigits: isMoney(key) ? 2 : 0,
                 })}
               </p>
             </div>
@@ -155,9 +165,9 @@ export default function SalesSummary() {
                     {capitalize(key.replace(/_/g, ' '))}
                   </td>
                   <td className="p-3 font-medium text-right text-gray-800">
-                    ₱
+                    {isMoney(key) ? '₱' : ''}
                     {Number(val).toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
+                      minimumFractionDigits: isMoney(key) ? 2 : 0,
                     })}
                   </td>
                 </tr>
