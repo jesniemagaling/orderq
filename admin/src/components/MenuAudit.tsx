@@ -139,25 +139,27 @@ export default function MenuHistory() {
   return (
     <Fragment>
       {/* HEADER */}
-      <div className="flex items-center gap-4 mb-8">
-        <Button
-          onClick={() => window.history.back()}
-          className="text-white transition rounded-lg"
-        >
-          <ArrowLeft size={20} />
-        </Button>
+      <div className="flex flex-col items-start gap-4 mb-8 md:flex-row md:items-center">
+        <div className="flex items-center w-full gap-4 md:w-auto">
+          <Button
+            onClick={() => window.history.back()}
+            className="text-white transition rounded-lg"
+          >
+            <ArrowLeft size={20} />
+          </Button>
 
-        <h1 className="text-3xl font-bold text-gray-900">Menu History</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Menu History</h1>
+        </div>
 
         {/* Filter */}
-        <div className="ml-auto">
-          <label className="block mb-1 text-sm font-medium text-gray-700">
+        <div className="flex flex-col w-full gap-1 ml-auto md:w-auto">
+          <label className="text-sm font-medium text-gray-700">
             Filter by Action
           </label>
           <select
             value={actionFilter}
             onChange={(e) => setActionFilter(e.target.value as any)}
-            className="border border-gray-300 rounded-lg px-2 py-1 text-sm focus:ring-2 focus:ring-[#820D17]/40"
+            className="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/60"
           >
             <option value="all">All</option>
             <option value="add">Add</option>
@@ -169,31 +171,23 @@ export default function MenuHistory() {
 
       {/* TABLE */}
       {loading ? (
-        <p>Loading history...</p>
+        <p className="text-gray-500">Loading history...</p>
       ) : (
-        <div className="overflow-x-auto bg-white rounded-lg shadow">
-          <table className="w-full text-sm border-collapse min-w-[800px]">
-            <thead className="bg-gray-100 border-b">
+        <div className="overflow-x-auto shadow-inner rounded-xl bg-gray-50">
+          <table className="min-w-[800px] w-full table-auto border-collapse">
+            <thead className="text-white bg-primary">
               <tr>
                 <th className="w-6 p-3"></th>
-                <th className="p-3 font-semibold text-left text-gray-700">
-                  ID
-                </th>
-                <th className="p-3 font-semibold text-left text-gray-700">
-                  Menu ID
-                </th>
-                <th className="p-3 font-semibold text-left text-gray-700">
-                  Action
-                </th>
-                <th className="p-3 font-semibold text-left text-gray-700">
-                  Date
-                </th>
+                <th className="p-3 font-semibold text-left">ID</th>
+                <th className="p-3 font-semibold text-left">Menu ID</th>
+                <th className="p-3 font-semibold text-left">Action</th>
+                <th className="p-3 font-semibold text-left">Date</th>
               </tr>
             </thead>
             <tbody>
               {filteredHistory.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-6 text-center text-gray-500">
+                  <td colSpan={5} className="p-6 text-center text-gray-400">
                     No history found.
                   </td>
                 </tr>
@@ -208,7 +202,7 @@ export default function MenuHistory() {
                   return (
                     <Fragment key={item.id}>
                       <tr
-                        className="transition bg-white border-b cursor-pointer hover:bg-gray-50"
+                        className="transition-colors border-b border-gray-200 bg-white hover:bg-[#6e0b13]/10 cursor-pointer"
                         onClick={() =>
                           setExpandedId(isExpanded ? null : item.id)
                         }
@@ -220,45 +214,43 @@ export default function MenuHistory() {
                             <ChevronRight size={18} />
                           )}
                         </td>
-                        <td className="p-3 font-medium text-left text-gray-800">
+                        <td className="p-3 font-medium text-gray-800">
                           #{item.id.toString().padStart(6, '0')}
                         </td>
-                        <td className="p-3 text-left text-gray-700">
+                        <td className="p-3 text-gray-800">
                           {item.menu_id != null
                             ? `#${item.menu_id.toString().padStart(6, '0')}`
                             : '—'}
                         </td>
-                        <td className="p-3 text-left">
-                          <span
-                            className={
-                              item.action === 'add'
-                                ? 'text-green-600 font-semibold'
-                                : item.action === 'update'
-                                ? 'text-yellow-600 font-semibold'
-                                : 'text-red-600 font-semibold'
-                            }
-                          >
-                            {capitalize(item.action)}
-                          </span>
+                        <td
+                          className={`p-3 font-semibold ${
+                            item.action === 'add'
+                              ? 'text-green-600'
+                              : item.action === 'update'
+                              ? 'text-yellow-600'
+                              : 'text-red-600'
+                          }`}
+                        >
+                          {capitalize(item.action)}
                         </td>
-                        <td className="p-3 text-left text-gray-700">
+                        <td className="p-3 text-gray-800">
                           {formatValue(item.created_at, 'created_at')}
                         </td>
                       </tr>
 
                       {isExpanded && (
-                        <tr className="border-b bg-gray-50">
+                        <tr className="border-b border-gray-200 bg-gray-50">
                           <td colSpan={5} className="p-5">
-                            {/* --- UPDATE --- */}
+                            {/* Differences tables styled like DailyIncome */}
                             {item.action === 'update' &&
                               differences.length > 0 && (
-                                <>
-                                  <div className="mb-3 text-lg font-semibold text-gray-800">
+                                <div className="p-3 overflow-x-auto bg-white shadow-inner rounded-xl">
+                                  <div className="mb-2 font-semibold text-gray-800">
                                     Changes
                                   </div>
-                                  <table className="w-full overflow-hidden text-sm rounded-lg">
-                                    <thead>
-                                      <tr className="bg-gray-200">
+                                  <table className="min-w-full text-sm border-collapse table-auto">
+                                    <thead className="bg-gray-100">
+                                      <tr>
                                         <th className="p-2 text-left">Field</th>
                                         <th className="p-2 text-left text-red-600">
                                           Old
@@ -293,18 +285,17 @@ export default function MenuHistory() {
                                       ))}
                                     </tbody>
                                   </table>
-                                </>
+                                </div>
                               )}
 
-                            {/* --- ADD --- */}
                             {item.action === 'add' && item.new_data && (
-                              <>
-                                <div className="mb-3 text-lg font-semibold text-gray-800">
+                              <div className="p-3 overflow-x-auto bg-white shadow-inner rounded-xl">
+                                <div className="mb-2 font-semibold text-gray-800">
                                   New Item Details
                                 </div>
-                                <table className="w-full overflow-hidden text-sm rounded-lg">
-                                  <thead>
-                                    <tr className="bg-gray-200">
+                                <table className="min-w-full text-sm border-collapse table-auto">
+                                  <thead className="bg-gray-100">
+                                    <tr>
                                       <th className="p-2 text-left">Field</th>
                                       <th className="p-2 text-left">Value</th>
                                     </tr>
@@ -327,18 +318,17 @@ export default function MenuHistory() {
                                     )}
                                   </tbody>
                                 </table>
-                              </>
+                              </div>
                             )}
 
-                            {/* --- DELETE --- */}
                             {item.action === 'delete' && item.old_data && (
-                              <>
-                                <div className="mb-3 text-lg font-semibold text-gray-800">
+                              <div className="p-3 overflow-x-auto bg-white shadow-inner rounded-xl">
+                                <div className="mb-2 font-semibold text-gray-800">
                                   Deleted Item Details
                                 </div>
-                                <table className="w-full overflow-hidden text-sm rounded-lg">
-                                  <thead>
-                                    <tr className="bg-gray-200">
+                                <table className="min-w-full text-sm border-collapse table-auto">
+                                  <thead className="bg-gray-100">
+                                    <tr>
                                       <th className="p-2 text-left">Field</th>
                                       <th className="p-2 text-left">Value</th>
                                     </tr>
@@ -361,7 +351,7 @@ export default function MenuHistory() {
                                     )}
                                   </tbody>
                                 </table>
-                              </>
+                              </div>
                             )}
                           </td>
                         </tr>

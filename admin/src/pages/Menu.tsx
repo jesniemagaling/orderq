@@ -160,6 +160,7 @@ export default function Menu() {
           <Button
             onClick={() => (window.location.href = '/admin/add-menu')}
             className="flex items-center gap-2 "
+            variant="secondary"
           >
             <PlusCircle size={18} /> Add Menu
           </Button>

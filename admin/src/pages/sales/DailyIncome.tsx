@@ -167,7 +167,11 @@ export default function DailyIncome() {
                   className="transition-colors border-b border-gray-200 hover:bg-[#6e0b13]/10"
                 >
                   <td className="p-3 text-gray-800">
-                    {new Date(r.day).toLocaleDateString()}
+                    {new Date(r.day).toLocaleDateString(undefined, {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                    })}
                   </td>
                   <td className="p-3 font-medium text-right text-gray-800">
                     ₱

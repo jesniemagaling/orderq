@@ -105,7 +105,7 @@ export default function Orders() {
           {['all', 'unpaid', 'paid', 'canceled'].map((f) => (
             <Button
               key={f}
-              className={filter === f ? 'bg-primary' : ''}
+              variant={filter === f ? 'primary' : 'secondary'}
               onClick={() => setFilter(f as any)}
             >
               {f.charAt(0).toUpperCase() + f.slice(1)}

@@ -31,12 +31,15 @@ export default function PaymentMethodBreakdown() {
       head: [['Method', 'Count', 'Total']],
       body: data.map((r) => [r.payment_method, r.count, r.total]),
       headStyles: {
-        fillColor: [110, 11, 19], // bg-primary
+        fillColor: [110, 11, 19],
         textColor: 255,
       },
     });
     doc.save('payment_breakdown.pdf');
   };
+
+  const capitalize = (str: string) =>
+    str.charAt(0).toUpperCase() + str.slice(1);
 
   return (
     <div className="p-6 shadow-lg bg-gray-50 rounded-xl">
@@ -78,7 +81,9 @@ export default function PaymentMethodBreakdown() {
                   key={idx}
                   className="transition-colors border-b border-gray-200 hover:bg-[#6e0b13]/10"
                 >
-                  <td className="p-3 text-gray-800">{r.payment_method}</td>
+                  <td className="p-3 text-gray-800">
+                    {capitalize(r.payment_method)}
+                  </td>
                   <td className="p-3 font-medium text-right text-gray-800">
                     {r.count}
                   </td>

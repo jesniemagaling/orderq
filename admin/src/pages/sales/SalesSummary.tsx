@@ -72,7 +72,7 @@ export default function SalesSummary() {
     doc.save(`sales_summary_${start}_to_${end}.pdf`);
   };
 
-  const capitalizeFirst = (str: string) =>
+  const capitalize = (str: string) =>
     str.charAt(0).toUpperCase() + str.slice(1);
 
   return (
@@ -122,7 +122,7 @@ export default function SalesSummary() {
               className="flex flex-col p-4 bg-white rounded-lg shadow"
             >
               <p className="text-sm text-gray-500">
-                {capitalizeFirst(key.replace(/_/g, ' '))}
+                {capitalize(key.replace(/_/g, ' '))}
               </p>
               <p className="mt-1 text-2xl font-bold text-gray-800">
                 ₱
@@ -152,7 +152,7 @@ export default function SalesSummary() {
                   className="border-b border-gray-200 hover:bg-[#6e0b13]/10 transition-colors"
                 >
                   <td className="p-3 text-gray-800">
-                    {capitalizeFirst(key.replace(/_/g, ' '))}
+                    {capitalize(key.replace(/_/g, ' '))}
                   </td>
                   <td className="p-3 font-medium text-right text-gray-800">
                     ₱
