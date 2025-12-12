@@ -493,3 +493,30 @@ export const markOrderAsServed = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+export const getOrdersRange = async (req, res) => {
+  try {
+    let { start, end, limit, sort } = req.query;
+    if (!start || !end) {
+      const [rows] = await db.query(
+        `SELECT o.id, o.table_id, o.total_amount, o.status, o.payment_status, o.payment_method, o.created_at, COALESCE(t.table_number, CONCAT('T', o.table_id)) AS table_number FROM orders o LEFT JOIN tables t ON o.table_id = t.id ORDER BY o.created_at ${
+          sort === 'asc' ? 'ASC' : 'DESC'
+        } ${limit ? 'LIMIT ' + Number(limit) : ''}`
+      );
+      return res.json(rows);
+    }
+
+    const { normalizeDateRange } = await import('../utils/dateRange.js');
+    const [s, e] = normalizeDateRange(start, end);
+
+    const [rows] = await db.query(
+      `SELECT o.id, o.table_id, o.total_amount, o.status, o.payment_status, o.payment_method, o.created_at, COALESCE(t.table_number, CONCAT('T', o.table_id)) AS table_number FROM orders o LEFT JOIN tables t ON o.table_id = t.id WHERE o.created_at BETWEEN ? AND ? ORDER BY o.created_at DESC`,
+      [s, e]
+    );
+
+    res.json(rows);
+  } catch (err) {
+    console.error('getOrdersRange error', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};

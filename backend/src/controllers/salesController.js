@@ -1,6 +1,7 @@
 import { db } from '../config/db.js';
 import { format } from 'date-fns';
 import { debugLog, debugError } from '../utils/logger.js';
+import { normalizeDateRange } from '../utils/dateRange.js';
 
 export const getDailyIncome = async (req, res) => {
   debugLog('getDailyIncome called', 'Query:', req.query);
@@ -28,23 +29,24 @@ export const getDailyIncome = async (req, res) => {
 };
 
 export const getOrdersPerDay = async (req, res) => {
-  debugLog('getOrdersPerDay called', 'Query:', req.query);
   try {
     const { start, end } = req.query;
+    if (!start || !end)
+      return res.status(400).json({ message: 'Start and end dates required' });
+    const [s, e] = normalizeDateRange(start, end);
 
     const [rows] = await db.execute(
       `
       SELECT DATE(created_at) AS day,
               COUNT(*) AS orders_count
       FROM orders
-      WHERE DATE(created_at) BETWEEN ? AND ?
+      WHERE created_at BETWEEN ? AND ?
       GROUP BY DATE(created_at)
       ORDER BY day
       `,
-      [start, end]
+      [s, e]
     );
 
-    debugLog('getOrdersPerDay result:', rows);
     res.json(rows);
   } catch (err) {
     debugError('getOrdersPerDay error:', err);
@@ -104,6 +106,9 @@ export const getItemSales = async (req, res) => {
 export const getSalesPerDay = async (req, res) => {
   try {
     const { start, end } = req.query;
+    if (!start || !end)
+      return res.status(400).json({ message: 'Start and end dates required' });
+    const [s, e] = normalizeDateRange(start, end);
 
     const [rows] = await db.execute(
       `
@@ -114,16 +119,16 @@ export const getSalesPerDay = async (req, res) => {
         AVG(total_amount) AS average_order
       FROM orders
       WHERE payment_status = 'paid'
-        AND DATE(created_at) BETWEEN ? AND ?
+        AND created_at BETWEEN ? AND ?
       GROUP BY DATE(created_at)
       ORDER BY DATE(created_at)
       `,
-      [start, end]
+      [s, e]
     );
 
     res.json(rows);
   } catch (err) {
-    console.error(err);
+    debugError('getSalesPerDay error:', err);
     res.status(500).json({ message: 'Failed to fetch sales per day' });
   }
 };
@@ -131,6 +136,10 @@ export const getSalesPerDay = async (req, res) => {
 export const getSalesSummary = async (req, res) => {
   try {
     const { start, end } = req.query;
+    if (!start || !end)
+      return res.status(400).json({ message: 'Start and end dates required' });
+
+    const [s, e] = normalizeDateRange(start, end);
 
     const [rows] = await db.execute(
       `
@@ -141,17 +150,29 @@ export const getSalesSummary = async (req, res) => {
         SUM(CASE WHEN payment_method = 'gcash' THEN total_amount ELSE 0 END) AS gcash_sales,
         SUM(CASE WHEN payment_method = 'paypal' THEN total_amount ELSE 0 END) AS paypal_sales,
         SUM(CASE WHEN status = 'canceled' THEN total_amount ELSE 0 END) AS canceled_amount,
-        AVG(total_amount) AS avg_order_value
+        AVG(total_amount) AS avg_order_value,
+        SUM(CASE WHEN payment_status = 'paid' THEN total_amount ELSE 0 END) AS total_sales
       FROM orders
-      WHERE payment_status = 'paid'
-        AND DATE(created_at) BETWEEN ? AND ?
+      WHERE created_at BETWEEN ? AND ?
       `,
-      [start, end]
+      [s, e]
     );
 
-    res.json(rows[0]);
+    // Add safe defaults
+    const out = rows[0] || {
+      gross_sales: 0,
+      total_orders: 0,
+      cash_sales: 0,
+      gcash_sales: 0,
+      paypal_sales: 0,
+      canceled_amount: 0,
+      avg_order_value: 0,
+      total_sales: 0,
+    };
+
+    res.json(out);
   } catch (err) {
-    console.error(err);
+    debugError('getSalesSummary error:', err);
     res.status(500).json({ message: 'Failed to fetch sales summary' });
   }
 };
@@ -175,6 +196,7 @@ export const getPaymentBreakdown = async (req, res) => {
 
 export const getHourlyHeatmap = async (req, res) => {
   try {
+    // Accept `date` param (YYYY-MM-DD) else default to today
     const date = req.query.date || format(new Date(), 'yyyy-MM-dd');
 
     const [rows] = await db.execute(
@@ -192,9 +214,21 @@ export const getHourlyHeatmap = async (req, res) => {
       [date]
     );
 
-    res.json(rows);
+    // Normalize to 0..23 so frontend can render missing hours (optional)
+    const map = new Map(rows.map((r) => [Number(r.hour), r]));
+    const full = [];
+    for (let h = 0; h < 24; h++) {
+      const r = map.get(h);
+      full.push({
+        hour: h,
+        orders_count: r ? Number(r.orders_count) : 0,
+        total_sales: r ? Number(r.total_sales) : 0,
+      });
+    }
+
+    res.json(full);
   } catch (err) {
-    console.error(err);
+    debugError('getHourlyHeatmap error:', err);
     res.status(500).json({ message: 'Failed to fetch hourly heatmap' });
   }
 };

@@ -121,6 +121,18 @@ CREATE TABLE IF NOT EXISTS order_items (
   FOREIGN KEY (menu_id) REFERENCES menu(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- ORDER LOGS TABLE
+CREATE TABLE IF NOT EXISTS order_logs (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  order_id INT NOT NULL,
+  action ENUM('created','confirmed','served','retracted','canceled','paid','updated') NOT NULL,
+  payload JSON NULL,
+  user_id INT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX (order_id),
+  FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- PAYMENTS TABLE (for secure online payment tracking)
 CREATE TABLE IF NOT EXISTS payments (
     id INT NOT NULL AUTO_INCREMENT,
