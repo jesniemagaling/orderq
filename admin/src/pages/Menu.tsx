@@ -170,7 +170,7 @@ export default function Menu() {
       {loading ? (
         <p>Loading menu...</p>
       ) : (
-        <div className="bg-white rounded-lg shadow-sm">
+        <div className="overflow-x-auto shadow-inner rounded-xl">
           <Swiper
             slidesPerView="auto"
             spaceBetween={0}
@@ -180,31 +180,19 @@ export default function Menu() {
             className="min-w-[1190px]"
           >
             <SwiperSlide style={{ width: 'auto' }}>
-              <table className="min-w-[1190px] w-full text-sm text-left border-collapse">
-                <thead className="bg-gray-100 border-b">
+              <table className="min-w-[1190px] w-full text-sm text-left border-collapse table-auto">
+                <thead className="text-white bg-primary">
                   <tr>
-                    <th className="p-2 font-semibold text-gray-700">
+                    <th className="p-2 font-semibold text-center">
                       Product ID
                     </th>
-                    <th className="p-2 font-semibold text-gray-700">Status</th>
-                    <th className="p-2 font-semibold text-gray-700">
-                      Product Name
-                    </th>
-                    <th className="p-2 font-semibold text-gray-700">
-                      Category
-                    </th>
-                    <th className="p-2 font-semibold text-gray-700">
-                      Description
-                    </th>
-                    <th className="p-2 font-semibold text-center text-gray-700">
-                      Stocks
-                    </th>
-                    <th className="p-2 font-semibold text-center text-gray-700">
-                      Price
-                    </th>
-                    <th className="p-2 font-semibold text-center text-gray-700">
-                      Action
-                    </th>
+                    <th className="p-2 font-semibold">Status</th>
+                    <th className="p-2 font-semibold">Product Name</th>
+                    <th className="p-2 font-semibold">Category</th>
+                    <th className="p-2 font-semibold">Description</th>
+                    <th className="p-2 font-semibold text-center">Stocks</th>
+                    <th className="p-2 font-semibold text-center">Price</th>
+                    <th className="p-2 font-semibold text-center">Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -223,10 +211,10 @@ export default function Menu() {
                         key={item.id}
                         className="transition border-b hover:bg-gray-50"
                       >
-                        <td className="p-2 text-gray-700">
+                        <td className="p-3 text-center text-gray-700">
                           #{item.id.toString().padStart(6, '0')}
                         </td>
-                        <td className="p-2">
+                        <td className="p-3">
                           <span
                             className={`${
                               item.status === 'in_stock'
@@ -239,20 +227,20 @@ export default function Menu() {
                               : 'Out of Stock'}
                           </span>
                         </td>
-                        <td className="p-2 text-gray-800">{item.name}</td>
-                        <td className="p-2 text-gray-800">
+                        <td className="p-3 text-gray-800">{item.name}</td>
+                        <td className="p-3 text-gray-800">
                           {item.category || '—'}
                         </td>
-                        <td className="max-w-xs p-2 text-gray-500 truncate">
+                        <td className="max-w-xs p-3 text-gray-500 truncate">
                           {item.description || '—'}
                         </td>
-                        <td className="p-2 text-center text-gray-700">
+                        <td className="p-3 text-center text-gray-700">
                           {item.stocks}
                         </td>
-                        <td className="p-2 text-center text-gray-700">
+                        <td className="p-3 text-center text-gray-700">
                           {formatPrice(item.price)}
                         </td>
-                        <td className="p-2 space-x-3 text-center">
+                        <td className="p-3 space-x-3 text-center">
                           <button
                             className="inline-flex items-center gap-1 font-medium text-green-600 hover:text-green-800"
                             onClick={() => openEditModal(item.id)}

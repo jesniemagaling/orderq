@@ -182,63 +182,98 @@ export default function Orders() {
 
     if (o.id.toString().includes(term)) return true;
     if (o.table_number.toString().includes(term)) return true;
-    if (o.items.some((item) => item.name.toLowerCase().includes(term)))
+
+    if (
+      o.items.some(
+        (item) =>
+          item.name.toLowerCase().includes(term) ||
+          item.quantity.toString().includes(term) ||
+          item.price.toString().includes(term)
+      )
+    ) {
       return true;
+    }
 
     return false;
   });
 
-  // Flatten orders into rows for sorting
-  const flattenedRows: OrderRow[] = filteredOrders.flatMap((o) =>
-    o.items.map((item) => ({
-      orderId: o.id,
-      table_number: o.table_number,
-      payment_status: o.payment_status,
-      total_amount: o.total_amount,
-      payment_method: o.payment_method,
-      created_at: o.created_at,
-      item,
-    }))
-  );
+  const flattenedRows: OrderRow[] = orders
+    .filter((o) => {
+      if (filter !== 'all' && o.payment_status !== filter) return false;
+      return true;
+    })
+    .flatMap((o) =>
+      o.items.map((item) => ({
+        orderId: o.id,
+        table_number: o.table_number,
+        payment_status: o.payment_status,
+        total_amount: o.total_amount,
+        payment_method: o.payment_method,
+        created_at: o.created_at,
+        item,
+      }))
+    )
+    .filter((row) => {
+      if (!search) return true;
+      const term = search.toLowerCase();
+      if (row.orderId.toString().includes(term)) return true;
+      if (row.table_number.toString().includes(term)) return true;
+      if (row.payment_status.toLowerCase().includes(term)) return true;
+      if (row.item.name.toLowerCase().includes(term)) return true;
+      if (row.item.quantity.toString().includes(term)) return true;
+      if (row.item.price.toString().includes(term)) return true;
+      return false;
+    });
 
-  // Sort flattened rows
   const sortedRows = [...flattenedRows].sort((a, b) => {
-    if (!sortConfig.key) return a.orderId - b.orderId; // default sort
-
+    if (!sortConfig.key) return a.orderId - b.orderId;
     const { key, direction } = sortConfig;
 
-    let valA: number;
-    let valB: number;
+    let valA: number, valB: number;
 
     if (key === 'table_number') {
-      valA = a.table_number;
-      valB = b.table_number;
+      valA = Number(a.table_number);
+      valB = Number(b.table_number);
     } else if (key === 'quantity') {
-      valA = a.item.quantity;
-      valB = b.item.quantity;
+      valA = Number(a.item.quantity);
+      valB = Number(b.item.quantity);
+    } else if (key === 'price') {
+      valA = Number(a.item.price);
+      valB = Number(b.item.price);
     } else {
-      valA = a.item.price;
-      valB = b.item.price;
+      valA = a.orderId;
+      valB = b.orderId;
     }
 
     return direction === 'asc' ? valA - valB : valB - valA;
   });
 
+  const groupedOrdersArray: { orderId: number; rows: OrderRow[] }[] = [];
+
+  sortedRows.forEach((row) => {
+    let group = groupedOrdersArray.find((g) => g.orderId === row.orderId);
+    if (!group) {
+      group = { orderId: row.orderId, rows: [] };
+      groupedOrdersArray.push(group);
+    }
+    group.rows.push(row);
+  });
+
   const handleSort = (key: SortConfig['key']) => {
     setSortConfig((prev) => ({
       key,
-      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc',
+      direction:
+        prev.key === key
+          ? prev.direction === 'asc'
+            ? 'desc'
+            : 'asc'
+          : key === 'quantity' || key === 'price'
+          ? 'desc'
+          : 'asc',
     }));
   };
 
   if (loading) return <p>Loading orders...</p>;
-
-  // Group sorted rows back into orders for rowspan rendering
-  const groupedOrders: Record<number, OrderRow[]> = {};
-  sortedRows.forEach((row) => {
-    if (!groupedOrders[row.orderId]) groupedOrders[row.orderId] = [];
-    groupedOrders[row.orderId].push(row);
-  });
 
   return (
     <>
@@ -335,8 +370,8 @@ export default function Orders() {
                 <span className="ml-1">
                   {sortConfig.key === 'table_number'
                     ? sortConfig.direction === 'asc'
-                      ? '↑'
-                      : '↓'
+                      ? '↓'
+                      : '↑'
                     : '⇅'}
                 </span>
               </th>
@@ -348,8 +383,8 @@ export default function Orders() {
                 <span className="ml-1">
                   {sortConfig.key === 'quantity'
                     ? sortConfig.direction === 'asc'
-                      ? '↑'
-                      : '↓'
+                      ? '↓'
+                      : '↑'
                     : '⇅'}
                 </span>
               </th>
@@ -361,8 +396,8 @@ export default function Orders() {
                 <span className="ml-1">
                   {sortConfig.key === 'price'
                     ? sortConfig.direction === 'asc'
-                      ? '↑'
-                      : '↓'
+                      ? '↓'
+                      : '↑'
                     : '⇅'}
                 </span>
               </th>
@@ -372,7 +407,7 @@ export default function Orders() {
           </thead>
 
           <tbody>
-            {Object.values(groupedOrders).length === 0 && (
+            {groupedOrdersArray.length === 0 && (
               <tr>
                 <td colSpan={7} className="p-6 text-center text-gray-500">
                   No orders found.
@@ -380,8 +415,8 @@ export default function Orders() {
               </tr>
             )}
 
-            {Object.values(groupedOrders).map((rows) => {
-              const firstRow = rows[0];
+            {groupedOrdersArray.map((group) => {
+              const rows = group.rows;
               return rows.map((row, idx) => (
                 <tr
                   key={`${row.orderId}-${row.item.id}`}
