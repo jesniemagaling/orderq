@@ -92,8 +92,9 @@ export default function DailyIncome() {
   const totalIncome = data.reduce((acc, r) => acc + Number(r.total_income), 0);
 
   return (
-    <div className="p-6 shadow-lg bg-gray-50 rounded-xl">
+    <>
       {/* Header */}
+      <h2 className="mb-4 text-2xl font-bold text-gray-800">Daily Income</h2>
       <div className="flex flex-col items-start justify-between gap-4 mb-6 md:flex-row md:items-center">
         <div className="flex flex-wrap items-center gap-3">
           <label className="font-medium text-gray-600">Select Date:</label>
@@ -185,6 +186,6 @@ export default function DailyIncome() {
           </tbody>
         </table>
       </div>
-    </div>
+    </>
   );
 }

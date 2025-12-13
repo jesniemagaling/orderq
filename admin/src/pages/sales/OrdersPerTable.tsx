@@ -84,7 +84,7 @@ export default function OrdersPerTable() {
   };
 
   return (
-    <div className="p-6 shadow-lg bg-gray-50 rounded-xl">
+    <>
       {/* Header */}
       <div className="flex flex-col items-start justify-between gap-4 mb-6 md:flex-row md:items-center">
         <h2 className="text-2xl font-bold text-gray-800">Orders per Table</h2>
@@ -138,6 +138,6 @@ export default function OrdersPerTable() {
           </table>
         </div>
       )}
-    </div>
+    </>
   );
 }

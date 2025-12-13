@@ -61,7 +61,8 @@ export default function HourlyHeatmap() {
   };
 
   return (
-    <div className="p-6 shadow-lg bg-gray-50 rounded-xl">
+    <>
+      <h2 className="mb-4 text-2xl font-bold text-gray-800">Hourly Heatmap</h2>
       {/* Header */}
       <div className="flex flex-col items-start justify-between gap-4 mb-6 md:flex-row md:items-center">
         <div className="flex flex-wrap items-center gap-4">
@@ -137,6 +138,6 @@ export default function HourlyHeatmap() {
           </tbody>
         </table>
       </div>
-    </div>
+    </>
   );
 }

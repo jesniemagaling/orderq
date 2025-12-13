@@ -563,7 +563,11 @@ export default function Tables() {
       </div>
 
       {/* Print Order Modal */}
-      <Modal isOpen={!!printOrder} onClose={() => setPrintOrder(null)}>
+      <Modal
+        isOpen={!!printOrder}
+        onClose={() => setPrintOrder(null)}
+        maxWidth="max-w-xs"
+      >
         {printOrder && (
           <>
             <h2 className="mb-3 text-lg font-semibold">
@@ -626,7 +630,11 @@ export default function Tables() {
       </Modal>
 
       {/* QR Modal */}
-      <Modal isOpen={qrModalOpen} onClose={() => setQrModalOpen(false)}>
+      <Modal
+        isOpen={qrModalOpen}
+        onClose={() => setQrModalOpen(false)}
+        maxWidth="max-w-xs"
+      >
         <div className="text-center">
           <h2 className="mb-4 text-xl font-semibold">
             Table #{qrTableNumber} QR Code
