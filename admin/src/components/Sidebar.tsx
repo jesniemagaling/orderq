@@ -115,7 +115,7 @@ export default function Sidebar({ role }: SidebarProps) {
                 {/* Sales sub-menu */}
                 {isSalesRoute && (
                   <div
-                    className="mt-2 ml-8 space-y-1 transition-all duration-300"
+                    className="ml-8 space-y-1 transition-all duration-300"
                     role="menu"
                   >
                     {SALES_TABS.map((tab) => (

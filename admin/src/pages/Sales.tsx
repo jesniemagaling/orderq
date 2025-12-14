@@ -3,46 +3,39 @@ import api from '../lib/axios';
 import Button from '../components/ui/Button';
 import { format } from 'date-fns';
 import { toast } from 'react-toastify';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import Modal from '../components/ui/Modal';
+
+type OrderItem = {
+  name: string;
+  quantity: number;
+  price: number | string;
+};
 
 type OrderRow = {
   id: number;
-  table_id?: number;
   table_number?: string;
-  total_amount?: number;
+  total_amount?: number | string;
   status?: string;
   payment_method?: string;
   payment_status?: string;
   created_at?: string;
-  items?: any[];
+  items?: OrderItem[];
 };
 
-function downloadCSV(filename: string, rows: any[]) {
-  if (!rows || rows.length === 0) return;
-
-  const keys = Object.keys(rows[0]);
-  const csv =
-    keys.join(',') +
-    '\n' +
-    rows
-      .map((r) =>
-        keys.map((k) => `"${String(r[k] ?? '').replace(/"/g, '""')}"`).join(',')
-      )
-      .join('\n');
-
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
+type SortKey = 'id' | 'table' | 'date' | 'amount' | null;
 
 export default function Sales() {
   const [rows, setRows] = useState<OrderRow[]>([]);
   const [filtered, setFiltered] = useState<OrderRow[]>([]);
+  const [selectedOrder, setSelectedOrder] = useState<OrderRow | null>(null);
+  const [expandedItem, setExpandedItem] = useState<number | null>(null);
+  const [sortConfig, setSortConfig] = useState<{
+    key: SortKey;
+    direction: 'asc' | 'desc';
+  }>({
+    key: null,
+    direction: 'asc',
+  });
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [start, setStart] = useState(() => {
@@ -52,19 +45,14 @@ export default function Sales() {
   });
   const [end, setEnd] = useState(() => new Date().toISOString().slice(0, 10));
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(15);
-  const [sortKey, setSortKey] = useState<'created_at' | 'total_amount'>(
-    'created_at'
-  );
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+  const pageSize = 15;
 
   const fetchOrders = async () => {
     setLoading(true);
     try {
       const res = await api.get('/orders');
       setRows(Array.isArray(res.data) ? res.data : []);
-    } catch (err) {
-      console.error(err);
+    } catch {
       toast.error('Failed to fetch orders');
     } finally {
       setLoading(false);
@@ -79,264 +67,296 @@ export default function Sales() {
     const s = new Date(start + 'T00:00:00');
     const e = new Date(end + 'T23:59:59');
 
-    const out = rows
-      .filter((r) => {
+    setFiltered(
+      rows.filter((r) => {
         if (!r.created_at) return false;
         const d = new Date(r.created_at);
         if (d < s || d > e) return false;
 
         if (!search) return true;
-        const q = search.toLowerCase();
         return (
-          String(r.id).includes(q) ||
-          String(r.table_number ?? r.table_id ?? '')
-            .toLowerCase()
-            .includes(q) ||
-          String(r.total_amount ?? '').includes(q) ||
-          (r.status ?? '').toLowerCase().includes(q) ||
-          (r.payment_method ?? '').toLowerCase().includes(q)
+          String(r.id).includes(search) ||
+          String(r.table_number ?? '').includes(search)
         );
       })
-      .sort((a, b) => {
-        if (sortKey === 'created_at') {
-          const da = new Date(a.created_at ?? 0).getTime();
-          const db = new Date(b.created_at ?? 0).getTime();
-          return sortDir === 'asc' ? da - db : db - da;
-        }
-        return sortDir === 'asc'
-          ? Number(a.total_amount ?? 0) - Number(b.total_amount ?? 0)
-          : Number(b.total_amount ?? 0) - Number(a.total_amount ?? 0);
-      });
-
-    setFiltered(out);
+    );
     setPage(1);
-  }, [rows, start, end, search, sortKey, sortDir]);
+  }, [rows, start, end, search]);
 
   const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const sortedRows = useMemo(() => {
+    if (!sortConfig.key) return filtered;
+
+    return [...filtered].sort((a, b) => {
+      let valA: number | string = '';
+      let valB: number | string = '';
+
+      switch (sortConfig.key) {
+        case 'id':
+          valA = a.id;
+          valB = b.id;
+          break;
+
+        case 'table':
+          valA = Number(a.table_number || 0);
+          valB = Number(b.table_number || 0);
+          break;
+
+        case 'date':
+          valA = new Date(a.created_at || '').getTime();
+          valB = new Date(b.created_at || '').getTime();
+          break;
+
+        case 'amount':
+          valA = Number(a.total_amount || 0);
+          valB = Number(b.total_amount || 0);
+          break;
+      }
+
+      return sortConfig.direction === 'asc'
+        ? Number(valA) - Number(valB)
+        : Number(valB) - Number(valA);
+    });
+  }, [filtered, sortConfig]);
+
   const pageRows = useMemo(
-    () => filtered.slice((page - 1) * pageSize, page * pageSize),
-    [filtered, page, pageSize]
+    () => sortedRows.slice((page - 1) * pageSize, page * pageSize),
+    [sortedRows, page]
   );
 
-  const exportPDF = () => {
-    if (!filtered.length) return;
+  const badge = (value?: string) => {
+    if (!value) return 'bg-gray-100 text-gray-600';
+    if (value === 'paid') return 'bg-green-100 text-green-700';
+    if (value === 'unpaid') return 'bg-yellow-100 text-yellow-700';
+    if (value === 'canceled') return 'bg-red-100 text-red-700';
+    return 'bg-gray-100 text-gray-700';
+  };
 
-    const doc = new jsPDF();
+  const sortIndicator = (key: SortKey) => {
+    if (sortConfig.key !== key) return '⇅';
+    return sortConfig.direction === 'asc' ? '↓' : '↑';
+  };
 
-    doc.setFontSize(16);
-    doc.text('Sales Orders Report', 14, 15);
-
-    doc.setFontSize(10);
-    doc.text(`Period: ${start} to ${end}`, 14, 22);
-    doc.text(`Total Orders: ${filtered.length}`, 14, 28);
-
-    autoTable(doc, {
-      startY: 34,
-      head: [
-        [
-          'Order #',
-          'Table',
-          'Date',
-          'Time',
-          'Status',
-          'Payment',
-          'Amount (₱)',
-          'Items',
-        ],
-      ],
-      body: filtered.map((r) => [
-        `#${r.id}`,
-        r.table_number ?? r.table_id ?? '-',
-        r.created_at ? format(new Date(r.created_at), 'yyyy-MM-dd') : '-',
-        r.created_at
-          ? new Date(r.created_at).toLocaleTimeString([], {
-              hour: 'numeric',
-              minute: '2-digit',
-            })
-          : '-',
-        r.status ?? '-',
-        `${r.payment_method ?? '-'} / ${r.payment_status ?? '-'}`,
-        Number(r.total_amount ?? 0).toFixed(2),
-        Array.isArray(r.items) ? r.items.length : '-',
-      ]),
-      styles: {
-        fontSize: 8,
-        cellPadding: 3,
-      },
-      headStyles: {
-        fillColor: [110, 11, 19],
-        textColor: 255,
-        fontStyle: 'bold',
-      },
-      alternateRowStyles: {
-        fillColor: [245, 245, 245],
-      },
-    });
-
-    doc.save(`sales-orders_${start}_to_${end}.pdf`);
+  const handleSort = (key: SortKey) => {
+    setSortConfig((prev) => ({
+      key,
+      direction:
+        prev.key === key
+          ? prev.direction === 'asc'
+            ? 'desc'
+            : 'asc'
+          : key === 'amount' || key === 'date'
+          ? 'desc'
+          : 'asc',
+    }));
   };
 
   return (
-    <div className="bg-white border border-gray-100 shadow-sm rounded-xl">
+    <div className="bg-white border shadow-sm rounded-xl">
       {/* Header */}
-      <div className="flex flex-col gap-4 p-4 border-b md:flex-row md:items-center md:justify-between">
+      <div className="flex items-center justify-between p-4 border-b">
         <div>
-          <h2 className="text-lg font-semibold text-gray-800">
-            Sales Overview
-          </h2>
-          <p className="text-sm text-gray-500">
-            All completed orders within selected period
-          </p>
+          <h2 className="text-lg font-semibold">Sales Overview</h2>
+          <p className="text-sm text-gray-500">Completed orders</p>
         </div>
-
-        <div className="flex flex-wrap gap-2">
-          <Button size="sm" onClick={fetchOrders}>
-            Refresh
-          </Button>
-          <Button size="sm" variant="secondary" onClick={exportPDF}>
-            Export PDF
-          </Button>
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={() =>
-              downloadCSV(`orders_${start}_to_${end}.csv`, filtered)
-            }
-          >
-            Export CSV
-          </Button>
-        </div>
+        <Button size="sm" onClick={fetchOrders}>
+          Refresh
+        </Button>
       </div>
 
       {/* Filters */}
-      <div className="grid grid-cols-1 gap-3 p-4 border-b md:grid-cols-4 md:items-end">
-        {/* Start Date */}
-        <div className="flex flex-col">
-          <label className="px-2 text-xs text-gray-600">Start</label>
-          <input
-            type="date"
-            value={start}
-            onChange={(e) => setStart(e.target.value)}
-            className="px-2 py-2 mt-1 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/60"
-          />
-        </div>
-
-        {/* End Date */}
-        <div className="flex flex-col">
-          <label className="px-2 text-xs text-gray-600">End</label>
-          <input
-            type="date"
-            value={end}
-            onChange={(e) => setEnd(e.target.value)}
-            className="px-2 py-2 mt-1 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/60"
-          />
-        </div>
-
-        {/* Search */}
-        <div className="flex flex-col md:col-span-2">
-          <label className="px-2 text-xs text-gray-600">Search</label>
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Order #, table, status, payment..."
-            className="w-full px-3 py-2 mt-1 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/60"
-          />
-        </div>
+      <div className="grid gap-3 p-4 border-b md:grid-cols-3">
+        <input
+          type="date"
+          value={start}
+          onChange={(e) => setStart(e.target.value)}
+          className="px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/60"
+        />
+        <input
+          type="date"
+          value={end}
+          onChange={(e) => setEnd(e.target.value)}
+          className="px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/60"
+        />
+        <input
+          placeholder="Search order or table..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/60"
+        />
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto shadow-inner rounded-xl">
-        <table className="w-full text-sm border-collapse table-auto">
-          <thead className="text-white bg-primary">
+      {/* TABLE (with max height) */}
+      <div className="overflow-x-auto max-h-[720px] overflow-y-auto">
+        <table className="w-full text-sm">
+          <thead className="sticky top-0 text-white bg-primary">
             <tr>
-              <th className="px-4 py-3 text-left">Order</th>
-              <th className="px-4 py-3 text-left">Table</th>
-              <th className="px-4 py-3 text-left">Date</th>
-              <th className="px-4 py-3 text-left">Time</th>
-              <th className="px-4 py-3 text-left">Status</th>
-              <th className="px-4 py-3 text-left">Payment</th>
-              <th className="px-4 py-3 text-right">Amount</th>
-              <th className="px-4 py-3 text-center">Items</th>
+              <th
+                className="px-4 py-3 text-left cursor-pointer select-none"
+                onClick={() => handleSort('id')}
+              >
+                Order <span className="ml-1">{sortIndicator('id')}</span>
+              </th>
+              <th
+                className="px-4 py-3 cursor-pointer select-none"
+                onClick={() => handleSort('table')}
+              >
+                Table <span className="ml-1">{sortIndicator('table')}</span>
+              </th>
+              <th
+                className="px-4 py-3 cursor-pointer select-none"
+                onClick={() => handleSort('date')}
+              >
+                Date <span className="ml-1">{sortIndicator('date')}</span>
+              </th>
+              <th className="px-4 py-3">Time</th>
+              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">Payment</th>
+              <th
+                className="px-4 py-3 text-right cursor-pointer select-none"
+                onClick={() => handleSort('amount')}
+              >
+                Amount <span className="ml-1">{sortIndicator('amount')}</span>
+              </th>
+              <th className="px-4 py-3 text-center">Action</th>
             </tr>
           </thead>
 
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={8} className="py-10 text-center text-gray-400">
+                <td colSpan={8} className="py-8 text-center text-gray-400">
                   Loading...
                 </td>
               </tr>
-            ) : pageRows.length === 0 ? (
-              <tr>
-                <td colSpan={8} className="py-10 text-center text-gray-400">
-                  No orders found
-                </td>
-              </tr>
             ) : (
-              pageRows.map((r) => (
-                <tr key={r.id} className="border-t hover:bg-primary/5">
-                  <td className="px-4 py-3 font-medium">#{r.id}</td>
-                  <td className="px-4 py-3">
-                    {r.table_number ?? r.table_id ?? '-'}
-                  </td>
-                  <td className="px-4 py-3">
-                    {r.created_at
-                      ? format(new Date(r.created_at), 'yyyy-MM-dd')
-                      : '-'}
-                  </td>
-                  <td className="px-4 py-3">
-                    {r.created_at
-                      ? new Date(r.created_at).toLocaleTimeString([], {
-                          hour: 'numeric',
-                          minute: '2-digit',
-                        })
-                      : '-'}
-                  </td>
-                  <td className="px-4 py-3">{r.status ?? '-'}</td>
-                  <td className="px-4 py-3">
-                    {r.payment_method ?? '-'} / {r.payment_status ?? '-'}
-                  </td>
-                  <td className="px-4 py-3 font-medium text-right">
-                    ₱{Number(r.total_amount ?? 0).toFixed(2)}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    {Array.isArray(r.items) ? r.items.length : '-'}
-                  </td>
-                </tr>
-              ))
+              pageRows.map((r) => {
+                const date = r.created_at ? new Date(r.created_at) : null;
+
+                return (
+                  <tr key={r.id} className="border-t hover:bg-primary/5">
+                    <td className="px-4 py-3 font-medium">#{r.id}</td>
+                    <td className="px-4 py-3 text-center">
+                      {r.table_number ?? '-'}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      {date ? format(date, 'yyyy-MM-dd') : '-'}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      {date ? format(date, 'HH:mm:ss') : '-'}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <span
+                        className={`px-2 py-1 text-xs rounded-full ${badge(
+                          r.status
+                        )}`}
+                      >
+                        {r.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <span
+                        className={`px-2 py-1 text-xs rounded-full ${badge(
+                          r.payment_status
+                        )}`}
+                      >
+                        {r.payment_method} / {r.payment_status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 font-medium text-right">
+                      ₱{Number(r.total_amount || 0).toFixed(2)}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          setExpandedItem(null);
+                          setSelectedOrder(r);
+                        }}
+                      >
+                        View
+                      </Button>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
       </div>
 
-      {/* Pagination */}
-      <div className="flex items-center justify-between px-4 py-3 border-t">
-        <div className="text-sm text-gray-600">
-          Page {page} of {pages}
-        </div>
+      {/* MODAL */}
+      <Modal
+        isOpen={!!selectedOrder}
+        onClose={() => setSelectedOrder(null)}
+        title={`Order #${selectedOrder?.id}`}
+        maxWidth="max-w-xl"
+      >
+        {selectedOrder && (
+          <div className="space-y-4">
+            {/* Items */}
+            <table className="w-full overflow-hidden text-sm border rounded-lg">
+              <thead className="text-white bg-primary">
+                <tr>
+                  <th className="px-3 py-2 text-left">Item</th>
+                  <th className="px-3 py-2 text-center">Qty</th>
+                  <th className="px-3 py-2 text-right">Price</th>
+                </tr>
+              </thead>
+              <tbody>
+                {selectedOrder.items?.map((item, i) => {
+                  const price = Number(item.price || 0);
+                  const qty = Number(item.quantity || 0);
 
-        <div className="flex gap-1">
-          {['«', '‹', '›', '»'].map((label, i) => (
-            <button
-              key={label}
-              onClick={() =>
-                i === 0
-                  ? setPage(1)
-                  : i === 1
-                  ? setPage((p) => Math.max(1, p - 1))
-                  : i === 2
-                  ? setPage((p) => Math.min(pages, p + 1))
-                  : setPage(pages)
-              }
-              disabled={(i < 2 && page === 1) || (i > 1 && page === pages)}
-              className="px-2 py-1 text-xs border rounded disabled:opacity-40"
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
+                  return (
+                    <React.Fragment key={i}>
+                      <tr
+                        onClick={() =>
+                          setExpandedItem(expandedItem === i ? null : i)
+                        }
+                        className="border-t cursor-pointer hover:bg-gray-50"
+                      >
+                        <td className="px-3 py-2">{item.name}</td>
+                        <td className="px-3 py-2 text-center">{qty}</td>
+                        <td className="px-3 py-2 text-right">
+                          ₱{price.toFixed(2)}
+                        </td>
+                      </tr>
+
+                      {expandedItem === i && (
+                        <tr className="bg-gray-50">
+                          <td
+                            colSpan={3}
+                            className="px-4 py-2 text-xs text-right"
+                          >
+                            Subtotal: ₱{(price * qty).toFixed(2)}
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+
+            {/* Total */}
+            <div className="pt-3 font-semibold text-right border-t">
+              Total: ₱{Number(selectedOrder.total_amount || 0).toFixed(2)}
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end pt-4">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setSelectedOrder(null)}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

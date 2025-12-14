@@ -1,80 +1,44 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React from 'react';
 
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   children: React.ReactNode;
-  maxWidth?: string; // optional prop to adjust width
+  title?: string;
+  maxWidth?: string;
 }
 
 export default function Modal({
   isOpen,
   onClose,
   children,
+  title,
   maxWidth = 'max-w-3xl',
 }: ModalProps) {
-  const modalRef = useRef<HTMLDivElement>(null);
-  const [show, setShow] = useState(isOpen);
-
-  // Handle opening/closing animations
-  useEffect(() => {
-    if (isOpen) setShow(true);
-    else {
-      // delay hiding to allow closing animation
-      const timeout = setTimeout(() => setShow(false), 300); // match animation duration
-      return () => clearTimeout(timeout);
-    }
-  }, [isOpen]);
-
-  // Close modal if window width < 1024
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 1024 && isOpen) {
-        onClose();
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    handleResize();
-
-    return () => window.removeEventListener('resize', handleResize);
-  }, [isOpen, onClose]);
-
-  // Close when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
-        onClose();
-      }
-    };
-
-    if (isOpen) document.addEventListener('mousedown', handleClickOutside);
-    else document.removeEventListener('mousedown', handleClickOutside);
-
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen, onClose]);
-
-  if (!show) return null;
+  if (!isOpen) return null;
 
   return (
-    <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${
-        isOpen ? 'opacity-100' : 'opacity-0'
-      }`}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
       <div
-        ref={modalRef}
-        className={`relative bg-white rounded-2xl shadow-xl w-full ${maxWidth} p-6 transform transition-transform duration-300 ${
-          isOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
-        }`}
+        className={`relative w-full ${maxWidth} bg-white rounded-2xl shadow-xl`}
+        onClick={(e) => e.stopPropagation()}
       >
-        <button
-          onClick={onClose}
-          className="absolute text-gray-500 right-4 top-4 hover:text-black"
-        >
-          ✕
-        </button>
-        {children}
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b">
+          <h3 className="text-lg font-semibold text-gray-800">
+            {title ?? 'Details'}
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-xl text-gray-400 hover:text-gray-800"
+            aria-label="Close"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 max-h-[70vh] overflow-y-auto">{children}</div>
       </div>
     </div>
   );

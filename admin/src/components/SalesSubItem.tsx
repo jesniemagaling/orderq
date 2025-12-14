@@ -16,7 +16,7 @@ export default function SalesSubItem({ to, label }: SalesSubItemProps) {
       end
       onClick={handleClick}
       className={({ isActive }) =>
-        `block rounded-md px-3 py-1.5 text-sm transition
+        `block rounded-md px-2 py-2 text-sm transition
     ${
       isActive
         ? 'text-primary font-semibold'

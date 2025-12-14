@@ -396,6 +396,19 @@ export default function Tables() {
     }
   };
 
+  const formatPaymentMethod = (method: string) => {
+    switch (method) {
+      case 'cash':
+        return 'Cash';
+      case 'card':
+        return 'Card';
+      case 'gcash':
+        return 'GCash';
+      default:
+        return method || '-';
+    }
+  };
+
   return (
     <div className="flex gap-10">
       {/* Tables list */}
@@ -566,65 +579,78 @@ export default function Tables() {
       <Modal
         isOpen={!!printOrder}
         onClose={() => setPrintOrder(null)}
-        maxWidth="max-w-xs"
+        maxWidth="max-w-sm"
+        title={
+          printOrder
+            ? printOrder.is_additional
+              ? `Additional Order #${orders.findIndex(
+                  (o) => o.id === printOrder.id
+                )}`
+              : 'Main Order'
+            : ''
+        }
       >
         {printOrder && (
           <>
-            <h2 className="mb-3 text-lg font-semibold">
-              {printOrder.is_additional
-                ? `Additional Order #${orders.findIndex(
-                    (o) => o.id === printOrder.id
-                  )}`
-                : 'Main Order'}
-            </h2>
-            <p className="mb-2 text-sm text-gray-600">
-              Date:{' '}
-              {new Date(printOrder.created_at).toLocaleString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-                month: 'short',
-                day: '2-digit',
-              })}
-            </p>
-
-            <table className="w-full mb-3 text-sm">
-              <tbody>
-                {printOrder.items.map((item, i) => (
-                  <tr key={i} className="border-b">
-                    <td className="py-1">{item.name}</td>
-                    <td className="py-1 text-center">{item.quantity}x</td>
-                    <td className="py-1 text-right">
-                      ₱{(item.price * item.quantity).toLocaleString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            <div className="mb-6 space-y-1 text-sm">
-              <p>
-                Subtotal: ₱
-                {Number(printOrder.total_amount || 0).toLocaleString(
-                  undefined,
-                  { minimumFractionDigits: 2, maximumFractionDigits: 2 }
-                )}
-              </p>
-              <p>
-                Tax: ₱
-                {(Number(printOrder.total_amount || 0) * 0.015).toFixed(2)}
-              </p>
-              <p className="font-medium">
-                Total: ₱
-                {(
-                  Number(printOrder.total_amount || 0) +
-                  Number(printOrder.total_amount || 0) * 0.015
-                ).toFixed(2)}
-              </p>
+            {/* Items Table */}
+            <div className="mb-6 overflow-hidden border rounded-xl">
+              <div className="max-h-[280px] overflow-y-auto">
+                <table className="w-full text-sm">
+                  <thead className="sticky top-0 text-white bg-primary">
+                    <tr>
+                      <th className="px-4 py-3 text-left w-[45%]">Product</th>
+                      <th className="px-4 py-3 text-center w-[15%]">Qty</th>
+                      <th className="px-4 py-3 text-right w-[20%]">Price</th>
+                      <th className="px-4 py-3 text-right w-[20%]">Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {printOrder.items.map((item, i) => {
+                      const price = Number(item.price) || 0;
+                      const qty = Number(item.quantity) || 0;
+                      return (
+                        <tr key={i} className="border-t hover:bg-primary/5">
+                          <td className="px-4 py-2">{item.name}</td>
+                          <td className="px-4 py-2 text-center">{qty}</td>
+                          <td className="px-4 py-2 text-right">
+                            ₱{price.toLocaleString()}
+                          </td>
+                          <td className="px-4 py-2 font-medium text-right">
+                            ₱{(price * qty).toLocaleString()}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
-            <Button className="w-full bg-primary" onClick={handleConfirmPrint}>
-              Confirm
-            </Button>
+            {/* Summary */}
+            <div className="grid gap-4 mb-6 md:grid-cols-2">
+              <div className="p-4 border rounded-xl">
+                <p className="text-sm text-gray-500">Payment Method</p>
+                <p className="mt-1 font-medium">
+                  {formatPaymentMethod(printOrder.payment_method)}
+                </p>
+              </div>
+
+              <div className="p-4 text-right border rounded-xl">
+                <p className="text-sm text-gray-500">Total Amount</p>
+                <p className="mt-1 text-2xl font-semibold">
+                  ₱{Number(printOrder.total_amount).toLocaleString()}
+                </p>
+              </div>
+            </div>
+
+            {/* Actions */}
+            {printOrder.payment_status === 'unpaid' && (
+              <div className="flex justify-end gap-3 pt-4 mt-6 border-t">
+                <Button variant="primary" onClick={handleConfirmPrint}>
+                  Confirm Print
+                </Button>
+              </div>
+            )}
           </>
         )}
       </Modal>
@@ -633,12 +659,10 @@ export default function Tables() {
       <Modal
         isOpen={qrModalOpen}
         onClose={() => setQrModalOpen(false)}
+        title={`Table #${qrTableNumber} QR Code`}
         maxWidth="max-w-xs"
       >
         <div className="text-center">
-          <h2 className="mb-4 text-xl font-semibold">
-            Table #{qrTableNumber} QR Code
-          </h2>
           {qrPreview ? (
             <img
               src={qrPreview}

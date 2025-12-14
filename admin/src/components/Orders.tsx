@@ -41,7 +41,7 @@ interface OrderLog {
 }
 
 interface SortConfig {
-  key: 'table_number' | 'price' | 'quantity' | null;
+  key: 'table_number' | 'price' | 'quantity' | 'products' | null;
   direction: 'asc' | 'desc';
 }
 
@@ -288,6 +288,10 @@ export default function Orders() {
         valA = Number(a.total_amount);
         valB = Number(b.total_amount);
         break;
+      case 'products':
+        valA = a.items.length;
+        valB = b.items.length;
+        break;
     }
 
     return sortConfig.direction === 'asc' ? valA - valB : valB - valA;
@@ -304,7 +308,7 @@ export default function Orders() {
           ? prev.direction === 'asc'
             ? 'desc'
             : 'asc'
-          : key === 'quantity' || key === 'price'
+          : key === 'quantity' || key === 'price' || key === 'products'
           ? 'desc'
           : 'asc',
     }));
@@ -406,7 +410,20 @@ export default function Orders() {
           <thead className="sticky top-0 z-10 text-white bg-primary">
             <tr>
               <th className="px-4 py-3">Order #</th>
-              <th className="px-4 py-3 text-center">Products</th>
+              <th
+                className="px-4 py-3 text-center cursor-pointer select-none"
+                onClick={() => handleSort('products')}
+              >
+                Products
+                <span className="ml-1">
+                  {sortConfig.key === 'products'
+                    ? sortConfig.direction === 'asc'
+                      ? '↓'
+                      : '↑'
+                    : '⇅'}
+                </span>
+              </th>
+
               <th
                 className="px-4 py-3 text-center cursor-pointer"
                 onClick={() => handleSort('table_number')}
@@ -466,8 +483,19 @@ export default function Orders() {
                 <td className="px-4 py-3 font-semibold text-center cursor-pointer hover:underline">
                   #{order.id}
                 </td>
-                <td className="px-4 py-3 font-medium text-center">
-                  {getUniqueProductsLabel(order)}
+                <td className="px-4 py-3 text-center">
+                  <span className="font-medium">
+                    {getUniqueProductsLabel(order)}
+                  </span>
+
+                  {search &&
+                    order.items.some((i) =>
+                      i.name.toLowerCase().includes(search.toLowerCase())
+                    ) && (
+                      <span className="block text-xs text-primary">
+                        matching product
+                      </span>
+                    )}
                 </td>
                 <td className="px-4 py-3 text-center">{order.table_number}</td>
                 <td className="px-4 py-3 text-center">
@@ -518,55 +546,96 @@ export default function Orders() {
       {/* Modal */}
       {selectedOrder && (
         <Modal
-          isOpen={modalOpen}
-          onClose={() => {
-            setModalOpen(false);
-            setSelectedOrder(null);
-          }}
+          isOpen={!!selectedOrder}
+          onClose={() => setSelectedOrder(null)}
+          title={`Order Details`}
           maxWidth="max-w-4xl"
         >
-          <h2 className="my-4 text-lg font-medium text-right">
-            Order #{selectedOrder.id}
-          </h2>
-          <h3 className="mb-2 text-xl font-medium">Order Details</h3>
+          {/* Header */}
+          <div className="flex items-center justify-between pb-4 mb-4 border-b">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-800">
+                Order #{selectedOrder.id}
+              </h2>
+              <p className="text-sm text-gray-500">
+                Table {selectedOrder.table_number ?? '-'} ·{' '}
+                {selectedOrder.created_at
+                  ? new Date(selectedOrder.created_at).toLocaleString()
+                  : ''}
+              </p>
+            </div>
 
-          <table className="w-full mb-6 text-sm border border-collapse">
-            <thead>
-              <tr className="border-b bg-gray-50">
-                <th className="py-2 text-left w-[60%]">Product Name</th>
-                <th className="py-2 text-left w-[20%]">Table Number</th>
-                <th className="py-2 text-center w-[20%]">Quantity</th>
-                <th className="py-2 text-right w-[20%]">Price</th>
-              </tr>
-            </thead>
-            <tbody>
-              {selectedOrder.items.map((item, index) => (
-                <tr
-                  key={`${selectedOrder.id}-${item.id}-${index}`}
-                  className="border-b"
-                >
-                  <td className="py-1 w-[60%]">{item.name}</td>
-                  <td className="py-1 text-center w-[20%]">
-                    {selectedOrder.table_number}
-                  </td>
-                  <td className="py-1 text-center w-[20%]">{item.quantity}</td>
-                  <td className="py-1 text-right w-[20%]">
-                    ₱{Number(item.price).toLocaleString()}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          <div className="mb-6">
-            <p className="mb-1 text-lg font-medium">Payment Method</p>
-            <p className="text-sm">
-              {formatPaymentMethod(selectedOrder.payment_method)}
-            </p>
+            <span
+              className={`px-3 py-1 text-xs font-medium rounded-full ${
+                selectedOrder.payment_status === 'paid'
+                  ? 'bg-green-100 text-green-700'
+                  : selectedOrder.payment_status === 'unpaid'
+                  ? 'bg-yellow-100 text-yellow-700'
+                  : 'bg-red-100 text-red-700'
+              }`}
+            >
+              {selectedOrder.payment_status}
+            </span>
           </div>
 
+          {/* Items Table */}
+          <div className="mb-6 overflow-hidden border rounded-xl">
+            <div className="max-h-[280px] overflow-y-auto">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 text-white bg-primary">
+                  <tr>
+                    <th className="px-4 py-3 text-left w-[45%]">Product</th>
+                    <th className="px-4 py-3 text-center w-[15%]">Qty</th>
+                    <th className="px-4 py-3 text-right w-[20%]">Price</th>
+                    <th className="px-4 py-3 text-right w-[20%]">Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedOrder.items.map((item, index) => {
+                    const price = Number(item.price) || 0;
+                    const qty = Number(item.quantity) || 0;
+
+                    return (
+                      <tr
+                        key={`${selectedOrder.id}-${index}`}
+                        className="border-t hover:bg-primary/5"
+                      >
+                        <td className="px-4 py-2">{item.name}</td>
+                        <td className="px-4 py-2 text-center">{qty}</td>
+                        <td className="px-4 py-2 text-right">
+                          ₱{price.toLocaleString()}
+                        </td>
+                        <td className="px-4 py-2 font-medium text-right">
+                          ₱{(price * qty).toLocaleString()}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Summary */}
+          <div className="grid gap-4 mb-6 md:grid-cols-2">
+            <div className="p-4 border rounded-xl">
+              <p className="text-sm text-gray-500">Payment Method</p>
+              <p className="mt-1 font-medium">
+                {formatPaymentMethod(selectedOrder.payment_method)}
+              </p>
+            </div>
+
+            <div className="p-4 text-right border rounded-xl">
+              <p className="text-sm text-gray-500">Total Amount</p>
+              <p className="mt-1 text-2xl font-semibold">
+                ₱{Number(selectedOrder.total_amount).toLocaleString()}
+              </p>
+            </div>
+          </div>
+
+          {/* Actions: Only for unpaid orders */}
           {selectedOrder.payment_status === 'unpaid' && (
-            <div className="flex gap-3">
+            <div className="flex justify-end gap-3 pt-4 mt-6 border-t">
               <PrintReceipt
                 order={{
                   ...selectedOrder,
@@ -577,7 +646,7 @@ export default function Orders() {
               />
 
               <Button
-                variant="secondary"
+                variant="primary"
                 onClick={() => handleBillOut(selectedOrder.id)}
                 disabled={updating}
               >
@@ -592,21 +661,24 @@ export default function Orders() {
         <Modal
           isOpen={retractModalOpen}
           onClose={() => setRetractModalOpen(false)}
+          maxWidth="max-w-lg"
         >
-          <h2 className="mb-4 text-lg font-medium">
+          <h2 className="mb-2 text-xl font-semibold">
             Retract Order #{selectedOrder.id}
           </h2>
-          <p className="mb-2 text-sm text-gray-600">
-            Please provide a reason for retracting this order:
+          <p className="mb-4 text-sm text-gray-500">
+            Please provide a reason for retracting this order.
           </p>
+
           <textarea
-            className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/60"
+            className="w-full p-3 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/60"
             rows={4}
             value={retractReason}
             onChange={(e) => setRetractReason(e.target.value)}
             placeholder="Enter reason..."
           />
-          <div className="flex justify-end gap-2 mt-4">
+
+          <div className="flex justify-end gap-2 mt-6">
             <Button
               variant="secondary"
               onClick={() => setRetractModalOpen(false)}
