@@ -9,6 +9,7 @@ import {
   cancelOrder,
   markOrderAsServed,
   retractOrder,
+  getOrderAudit,
 } from '../controllers/orderController.js';
 
 const router = express.Router();
@@ -18,8 +19,9 @@ router.post('/', createOrder);
 router.post('/:id/confirm', confirmOrder);
 
 // GET routes
-router.get('/', getAllOrders);
+router.get('/logs', getOrderAudit);
 router.get('/by-session', getOrdersBySession);
+router.get('/', getAllOrders);
 router.get('/:id', getOrderDetails);
 
 // PUT routes

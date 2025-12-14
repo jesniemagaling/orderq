@@ -115,10 +115,13 @@ export default function Orders() {
 
               <Separator />
 
-              {order.status === 'canceled' ? (
+              {order.status === 'canceled' ||
+              order.payment_status === 'retracted' ? (
                 <div className="flex justify-center w-full">
                   <Button variant="default" disabled className="py-6">
-                    Order Canceled
+                    {order.status === 'canceled'
+                      ? 'Order Canceled'
+                      : 'Order Retracted'}
                   </Button>
                 </div>
               ) : (

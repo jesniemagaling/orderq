@@ -6,6 +6,7 @@ import SalesLayout from './layouts/SalesLayout';
 import Overview from './pages/Overview';
 import Sales from './pages/Sales';
 import Orders from './components/Orders';
+import OrdersHistory from './components/OrderAudit';
 import Menu from './pages/Menu';
 import AddMenu from './components/AddMenu';
 import MenuHistory from './components/MenuAudit';
@@ -55,6 +56,7 @@ export default function App() {
           </Route>
 
           <Route path="/admin/orders" element={<Orders />} />
+          <Route path="/admin/order-logs" element={<OrdersHistory />} />
           <Route path="/admin/menu" element={<Menu />} />
           <Route path="/admin/add-menu" element={<AddMenu />} />
           <Route path="/admin/menu-history" element={<MenuHistory />} />

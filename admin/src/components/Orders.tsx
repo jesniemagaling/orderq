@@ -25,6 +25,21 @@ interface Order {
   }[];
 }
 
+interface OrderLog {
+  id: number;
+  action:
+    | 'created'
+    | 'confirmed'
+    | 'served'
+    | 'retracted'
+    | 'canceled'
+    | 'paid'
+    | 'updated';
+  payload: any;
+  username: string | null;
+  created_at: string;
+}
+
 interface SortConfig {
   key: 'table_number' | 'price' | 'quantity' | null;
   direction: 'asc' | 'desc';
@@ -237,7 +252,7 @@ export default function Orders() {
     if (o.table_number.toString().includes(term)) return true;
     if (o.payment_status.toLowerCase().includes(term)) return true;
 
-    // Products (Unique)
+    // Products
     if (o.items.length.toString().includes(term)) return true;
 
     // Total Quantity
@@ -299,7 +314,15 @@ export default function Orders() {
 
   return (
     <>
-      <h1 className="mb-6 text-3xl font-bold">Orders</h1>
+      <div className="flex items-center justify-between mb-3">
+        <h1 className="text-3xl font-bold">Orders</h1>
+        <Button
+          onClick={() => (window.location.href = '/admin/order-logs')}
+          className="flex items-center gap-2"
+        >
+          Orders Audit
+        </Button>
+      </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 gap-4 mb-6 md:grid-cols-4">
@@ -378,9 +401,9 @@ export default function Orders() {
       </div>
 
       {/* Orders Table */}
-      <div className="overflow-x-auto shadow-inner rounded-xl max-h-96">
-        <table className="min-w-full text-sm text-left border-collapse table-auto">
-          <thead className="sticky text-white bg-primary">
+      <div className="overflow-x-auto overflow-y-auto border shadow-inner rounded-xl max-h-[640px]">
+        <table className="min-w-full text-sm border-collapse table-auto">
+          <thead className="sticky top-0 z-10 text-white bg-primary">
             <tr>
               <th className="px-4 py-3">Order #</th>
               <th className="px-4 py-3 text-center">Products</th>
@@ -430,7 +453,7 @@ export default function Orders() {
           </thead>
 
           <tbody>
-            {filteredOrders.length === 0 && (
+            {sortedOrders.length === 0 && (
               <tr>
                 <td colSpan={8} className="p-6 text-center text-gray-500">
                   No orders found.
@@ -440,41 +463,22 @@ export default function Orders() {
 
             {sortedOrders.map((order) => (
               <tr key={order.id} className="border-b hover:bg-gray-50">
-                {/* Order # */}
-                <td
-                  className="px-4 py-3 font-semibold cursor-pointer hover:underline"
-                  onClick={() => {
-                    setSelectedOrder(order);
-                    setModalOpen(true);
-                  }}
-                >
+                <td className="px-4 py-3 font-semibold text-center cursor-pointer hover:underline">
                   #{order.id}
                 </td>
-
-                {/* Items */}
                 <td className="px-4 py-3 font-medium text-center">
                   {getUniqueProductsLabel(order)}
                 </td>
-
-                {/* Table */}
                 <td className="px-4 py-3 text-center">{order.table_number}</td>
-
-                {/* Quantity */}
                 <td className="px-4 py-3 text-center">
                   {getTotalQuantity(order)}
                 </td>
-
-                {/* Total Price */}
                 <td className="px-4 py-3 text-center">
                   ₱{Number(order.total_amount).toLocaleString()}
                 </td>
-
-                {/* Payment Method */}
                 <td className="px-4 py-3 text-center">
                   {formatPaymentMethod(order.payment_method)}
                 </td>
-
-                {/* Status */}
                 <td
                   className={`text-center font-medium ${getStatusColor(
                     order.payment_status
@@ -483,8 +487,6 @@ export default function Orders() {
                   {order.payment_status.charAt(0).toUpperCase() +
                     order.payment_status.slice(1)}
                 </td>
-
-                {/* Action */}
                 <td className="flex items-center justify-center px-4 py-3 space-x-2 text-center">
                   <button
                     onClick={() => {

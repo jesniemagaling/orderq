@@ -220,66 +220,71 @@ export const retractOrder = async (req, res) => {
   const { id } = req.params;
   const { reason } = req.body;
 
-  if (!reason || reason.trim() === '') {
-    return res.status(400).json({
-      message: 'Retract reason is required',
-    });
-  }
+  // You may already have auth middleware
+  const userId = req.user?.id || null;
 
-  const connection = await db.getConnection();
+  const conn = await db.getConnection();
 
   try {
-    await connection.beginTransaction();
-
-    // Lock the order row
-    const [orders] = await connection.query(
-      `SELECT payment_status 
-        FROM orders 
-        WHERE id = ? 
-        FOR UPDATE`,
-      [id]
-    );
-
-    if (orders.length === 0) {
-      await connection.rollback();
-      return res.status(404).json({ message: 'Order not found' });
-    }
-
-    const order = orders[0];
-
-    // Business rule: ONLY unpaid can be retracted
-    if (order.payment_status !== 'unpaid') {
-      await connection.rollback();
-      return res.status(400).json({
-        message: 'Only unpaid orders can be retracted',
-      });
-    }
+    await conn.beginTransaction();
 
     // Update order
-    await connection.query(
-      `UPDATE orders
-        SET payment_status = 'retracted',
-            retract_reason = ?,
-            retracted_at = NOW()
-        WHERE id = ?`,
+    const [result] = await conn.query(
+      `
+      UPDATE orders
+      SET payment_status = 'retracted',
+          retract_reason = ?,
+          retracted_at = NOW()
+      WHERE id = ?
+        AND payment_status = 'unpaid'
+      `,
       [reason, id]
     );
 
-    // Optional: restore stock here if you track inventory
+    if (result.affectedRows === 0) {
+      await conn.rollback();
+      return res.status(400).json({ message: 'Order cannot be retracted' });
+    }
 
-    await connection.commit();
+    // Insert log
+    await conn.query(
+      `
+      INSERT INTO order_logs (order_id, action, payload, user_id)
+      VALUES (?, 'retracted', ?, ?)
+      `,
+      [id, JSON.stringify({ reason }), userId]
+    );
 
-    res.json({
-      message: 'Order retracted successfully',
-    });
-  } catch (error) {
-    await connection.rollback();
-    console.error('Retract order error:', error);
-    res.status(500).json({
-      message: 'Failed to retract order',
-    });
+    await conn.commit();
+
+    res.json({ message: 'Order retracted successfully' });
+  } catch (err) {
+    await conn.rollback();
+    console.error('Retract order error:', err);
+    res.status(500).json({ message: 'Failed to retract order' });
   } finally {
-    connection.release();
+    conn.release();
+  }
+};
+export const getOrderAudit = async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT
+        ol.id,
+        ol.order_id,
+        ol.action,
+        ol.payload,
+        ol.created_at,
+        u.username
+      FROM order_logs ol
+      LEFT JOIN users u ON u.id = ol.user_id
+      ORDER BY ol.created_at DESC
+    `);
+
+    res.json(rows);
+  } catch (err) {
+    console.error('Order audit error:', err);
+    res.status(500).json({ message: 'Failed to fetch order audit' });
   }
 };
 
