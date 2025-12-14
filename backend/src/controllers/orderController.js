@@ -220,10 +220,10 @@ export const retractOrder = async (req, res) => {
   const { id } = req.params;
   const { reason } = req.body;
 
-  debugger; // <-- Execution will pause here if Node is run with --inspect
-
-  if (!reason) {
-    return res.status(400).json({ message: 'Retract reason is required' });
+  if (!reason || reason.trim() === '') {
+    return res.status(400).json({
+      message: 'Retract reason is required',
+    });
   }
 
   const connection = await db.getConnection();
@@ -231,14 +231,14 @@ export const retractOrder = async (req, res) => {
   try {
     await connection.beginTransaction();
 
-    debugger; // <-- Check connection and transaction started
-
+    // Lock the order row
     const [orders] = await connection.query(
-      'SELECT * FROM orders WHERE id = ? FOR UPDATE',
+      `SELECT payment_status 
+        FROM orders 
+        WHERE id = ? 
+        FOR UPDATE`,
       [id]
     );
-
-    debugger; // <-- Inspect 'orders' array
 
     if (orders.length === 0) {
       await connection.rollback();
@@ -247,73 +247,37 @@ export const retractOrder = async (req, res) => {
 
     const order = orders[0];
 
-    if (order.payment_status === 'paid') {
+    // Business rule: ONLY unpaid can be retracted
+    if (order.payment_status !== 'unpaid') {
       await connection.rollback();
-      return res
-        .status(400)
-        .json({ message: 'Paid orders cannot be retracted' });
+      return res.status(400).json({
+        message: 'Only unpaid orders can be retracted',
+      });
     }
 
-    if (order.status === 'canceled') {
-      await connection.rollback();
-      return res.status(400).json({ message: 'Order already canceled' });
-    }
-
-    // Restore stock
-    const [items] = await connection.query(
-      'SELECT menu_id, quantity FROM order_items WHERE order_id = ?',
-      [id]
-    );
-
-    debugger; // <-- Inspect 'items' array
-
-    for (const item of items) {
-      await connection.query(
-        `UPDATE menu
-          SET stocks = stocks + ?,
-              status = 'in_stock'
-          WHERE id = ?`,
-        [item.quantity, item.menu_id]
-      );
-
-      debugger; // <-- Inspect after each stock update
-    }
-
+    // Update order
     await connection.query(
       `UPDATE orders
-        SET status = 'canceled',
-            payment_status = 'canceled',
-            retract_reason = ?
+        SET payment_status = 'retracted',
+            retract_reason = ?,
+            retracted_at = NOW()
         WHERE id = ?`,
       [reason, id]
     );
 
-    debugger; // <-- Inspect after updating order
-
-    await connection.query(
-      `INSERT INTO order_logs (order_id, action, payload)
-        VALUES (?, 'retracted', ?)`,
-      [id, JSON.stringify({ reason })]
-    );
+    // Optional: restore stock here if you track inventory
 
     await connection.commit();
 
-    debugger; // <-- Inspect after commit
-
-    notifyOrderCancelled({
-      orderId: id,
-      tableId: order.table_id,
-      payment_status: 'canceled',
-      reason,
-    });
-
-    res.status(200).json({
+    res.json({
       message: 'Order retracted successfully',
     });
-  } catch (err) {
+  } catch (error) {
     await connection.rollback();
-    console.error('[RetractOrder]', err);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Retract order error:', error);
+    res.status(500).json({
+      message: 'Failed to retract order',
+    });
   } finally {
     connection.release();
   }

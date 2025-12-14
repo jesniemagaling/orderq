@@ -96,17 +96,59 @@ CREATE TABLE IF NOT EXISTS menu_history (
 -- ORDERS TABLE
 CREATE TABLE IF NOT EXISTS orders (
   id INT NOT NULL AUTO_INCREMENT,
+
   session_id INT NOT NULL,
   table_id INT NOT NULL,
-  status ENUM('pending', 'unserved', 'served', 'canceled') DEFAULT 'pending',
-  payment_method ENUM('cash','gcash','paypal') DEFAULT 'cash',
-  payment_status ENUM('unpaid','paid','failed', 'canceled') DEFAULT 'unpaid',
+
+  status ENUM(
+    'pending',
+    'unserved',
+    'served',
+    'canceled',
+    'retracted'
+  ) DEFAULT 'pending',
+
+  payment_method ENUM(
+    'cash',
+    'gcash',
+    'paypal'
+  ) DEFAULT 'cash',
+
+  payment_status ENUM(
+    'unpaid',
+    'paid',
+    'failed',
+    'canceled',
+    'retracted'
+  ) DEFAULT 'unpaid',
+
   total_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+
+  retract_reason TEXT NULL,
+  retracted_at TIMESTAMP NULL,
+  retracted_by INT NULL,
+
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
   PRIMARY KEY (id),
-  FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE,
-  FOREIGN KEY (table_id) REFERENCES tables(id) ON DELETE CASCADE
+
+  CONSTRAINT fk_orders_session
+    FOREIGN KEY (session_id)
+    REFERENCES sessions(id)
+    ON DELETE CASCADE,
+
+  CONSTRAINT fk_orders_table
+    FOREIGN KEY (table_id)
+    REFERENCES tables(id)
+    ON DELETE CASCADE,
+
+  CONSTRAINT fk_orders_retracted_by
+    FOREIGN KEY (retracted_by)
+    REFERENCES users(id)
+    ON DELETE SET NULL
+
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 
 -- ORDER ITEMS TABLE
 CREATE TABLE IF NOT EXISTS order_items (

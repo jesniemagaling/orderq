@@ -176,11 +176,7 @@ export default function Orders() {
   };
 
   const handleRetractOrder = (order: Order) => {
-    // Disable retract for served/paid/canceled/retracted orders
-    if (
-      ['served', 'paid', 'canceled', 'retracted'].includes(order.payment_status)
-    )
-      return;
+    if (order.payment_status !== 'unpaid') return;
 
     setSelectedOrder(order);
     setRetractReason('');
@@ -382,9 +378,9 @@ export default function Orders() {
       </div>
 
       {/* Orders Table */}
-      <div className="overflow-x-auto shadow-inner rounded-xl">
+      <div className="overflow-x-auto shadow-inner rounded-xl max-h-96">
         <table className="min-w-full text-sm text-left border-collapse table-auto">
-          <thead className="text-white bg-primary">
+          <thead className="sticky text-white bg-primary">
             <tr>
               <th className="px-4 py-3">Order #</th>
               <th className="px-4 py-3 text-center">Products</th>
@@ -501,9 +497,7 @@ export default function Orders() {
                     <Eye size={18} />
                   </button>
 
-                  {['unpaid', 'created', 'updated'].includes(
-                    order.payment_status
-                  ) && (
+                  {order.payment_status === 'unpaid' && (
                     <Button
                       size="sm"
                       onClick={() => handleRetractOrder(order)}
@@ -569,9 +563,7 @@ export default function Orders() {
             </p>
           </div>
 
-          {!['canceled', 'retracted'].includes(
-            selectedOrder.payment_status
-          ) && (
+          {selectedOrder.payment_status === 'unpaid' && (
             <div className="flex gap-3">
               <PrintReceipt
                 order={{
@@ -582,15 +574,13 @@ export default function Orders() {
                 onConfirm={() => {}}
               />
 
-              {selectedOrder.payment_status === 'unpaid' && (
-                <Button
-                  variant="secondary"
-                  onClick={() => handleBillOut(selectedOrder.id)}
-                  disabled={updating}
-                >
-                  {updating ? 'Processing...' : 'Bill Out'}
-                </Button>
-              )}
+              <Button
+                variant="secondary"
+                onClick={() => handleBillOut(selectedOrder.id)}
+                disabled={updating}
+              >
+                {updating ? 'Processing...' : 'Bill Out'}
+              </Button>
             </div>
           )}
         </Modal>
