@@ -152,7 +152,7 @@ export default function Sales() {
   };
 
   return (
-    <div className="bg-white border shadow-sm rounded-xl">
+    <div className="">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b">
         <div>
@@ -187,7 +187,7 @@ export default function Sales() {
       </div>
 
       {/* TABLE (with max height) */}
-      <div className="overflow-x-auto max-h-[720px] overflow-y-auto">
+      <div className="overflow-x-auto max-h-[720px] overflow-y-auto border shadow-inner rounded-xl">
         <table className="w-full text-sm">
           <thead className="sticky top-0 text-white bg-primary">
             <tr>
@@ -243,20 +243,18 @@ export default function Sales() {
                       {date ? format(date, 'yyyy-MM-dd') : '-'}
                     </td>
                     <td className="px-4 py-3 text-center">
-                      {date ? format(date, 'HH:mm:ss') : '-'}
+                      {date ? format(date, 'hh:mm:ss a') : '-'}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <span
-                        className={`px-2 py-1 text-xs rounded-full ${badge(
-                          r.status
-                        )}`}
+                        className={`px-2 py-1  rounded-full ${badge(r.status)}`}
                       >
                         {r.status}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center">
                       <span
-                        className={`px-2 py-1 text-xs rounded-full ${badge(
+                        className={`px-2 py-1  rounded-full ${badge(
                           r.payment_status
                         )}`}
                       >
