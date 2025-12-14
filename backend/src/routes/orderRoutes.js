@@ -8,6 +8,7 @@ import {
   confirmOrder,
   cancelOrder,
   markOrderAsServed,
+  retractOrder,
 } from '../controllers/orderController.js';
 
 const router = express.Router();
@@ -25,5 +26,6 @@ router.get('/:id', getOrderDetails);
 router.put('/:id/pay', markOrderAsPaid);
 router.put('/:id/serve', markOrderAsServed);
 router.put('/:orderId/cancel', cancelOrder);
+router.put('/:id/retract', retractOrder);
 
 export default router;

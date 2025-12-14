@@ -215,6 +215,110 @@ export const cancelOrder = async (req, res) => {
   }
 };
 
+// retract orders
+export const retractOrder = async (req, res) => {
+  const { id } = req.params;
+  const { reason } = req.body;
+
+  debugger; // <-- Execution will pause here if Node is run with --inspect
+
+  if (!reason) {
+    return res.status(400).json({ message: 'Retract reason is required' });
+  }
+
+  const connection = await db.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    debugger; // <-- Check connection and transaction started
+
+    const [orders] = await connection.query(
+      'SELECT * FROM orders WHERE id = ? FOR UPDATE',
+      [id]
+    );
+
+    debugger; // <-- Inspect 'orders' array
+
+    if (orders.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    const order = orders[0];
+
+    if (order.payment_status === 'paid') {
+      await connection.rollback();
+      return res
+        .status(400)
+        .json({ message: 'Paid orders cannot be retracted' });
+    }
+
+    if (order.status === 'canceled') {
+      await connection.rollback();
+      return res.status(400).json({ message: 'Order already canceled' });
+    }
+
+    // Restore stock
+    const [items] = await connection.query(
+      'SELECT menu_id, quantity FROM order_items WHERE order_id = ?',
+      [id]
+    );
+
+    debugger; // <-- Inspect 'items' array
+
+    for (const item of items) {
+      await connection.query(
+        `UPDATE menu
+          SET stocks = stocks + ?,
+              status = 'in_stock'
+          WHERE id = ?`,
+        [item.quantity, item.menu_id]
+      );
+
+      debugger; // <-- Inspect after each stock update
+    }
+
+    await connection.query(
+      `UPDATE orders
+        SET status = 'canceled',
+            payment_status = 'canceled',
+            retract_reason = ?
+        WHERE id = ?`,
+      [reason, id]
+    );
+
+    debugger; // <-- Inspect after updating order
+
+    await connection.query(
+      `INSERT INTO order_logs (order_id, action, payload)
+        VALUES (?, 'retracted', ?)`,
+      [id, JSON.stringify({ reason })]
+    );
+
+    await connection.commit();
+
+    debugger; // <-- Inspect after commit
+
+    notifyOrderCancelled({
+      orderId: id,
+      tableId: order.table_id,
+      payment_status: 'canceled',
+      reason,
+    });
+
+    res.status(200).json({
+      message: 'Order retracted successfully',
+    });
+  } catch (err) {
+    await connection.rollback();
+    console.error('[RetractOrder]', err);
+    res.status(500).json({ message: 'Server error' });
+  } finally {
+    connection.release();
+  }
+};
+
 // Get all orders with their items
 export const getAllOrders = async (req, res) => {
   try {

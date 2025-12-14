@@ -12,31 +12,17 @@ interface Order {
   id: number;
   table_number: number;
   table_id: string;
-  payment_status: 'unpaid' | 'paid' | 'canceled';
+  payment_status: 'unpaid' | 'paid' | 'canceled' | 'retracted';
   total_amount: number;
   payment_method: string;
   created_at?: string;
+  retract_reason?: string;
   items: {
     id: number;
     name: string;
     quantity: number;
     price: number;
   }[];
-}
-
-interface OrderRow {
-  orderId: number;
-  table_number: number;
-  payment_status: 'unpaid' | 'paid' | 'canceled';
-  total_amount: number;
-  payment_method: string;
-  created_at?: string;
-  item: {
-    id: number;
-    name: string;
-    quantity: number;
-    price: number;
-  };
 }
 
 interface SortConfig {
@@ -48,9 +34,10 @@ export default function Orders() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'unpaid' | 'paid' | 'canceled'>(
-    'all'
-  );
+  const [filter, setFilter] = useState<
+    'all' | 'unpaid' | 'paid' | 'canceled' | 'retracted'
+  >('all');
+
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -59,6 +46,10 @@ export default function Orders() {
     key: null,
     direction: 'asc',
   });
+
+  const [retractModalOpen, setRetractModalOpen] = useState(false);
+  const [retractReason, setRetractReason] = useState('');
+  const [isRetracting, setIsRetracting] = useState(false);
 
   // Fetch orders
   useEffect(() => {
@@ -100,6 +91,11 @@ export default function Orders() {
     setSelectedOrder(null);
   };
 
+  const getUniqueProductsCount = (order: Order) => order.items.length;
+
+  const getUniqueProductsLabel = (order: Order) =>
+    `${order.items.length} product${order.items.length > 1 ? 's' : ''}`;
+
   const formatPaymentMethod = (method: string) =>
     method
       ? method.charAt(0).toUpperCase() + method.slice(1).toLowerCase()
@@ -111,14 +107,18 @@ export default function Orders() {
 
     autoTable(doc, {
       startY: 20,
-      head: [['Order #', 'Table', 'Status', 'Amount', 'Items']],
+      head: [
+        ['Order #', 'Table', 'Status', 'Products (Unique)', 'Qty', 'Amount'],
+      ],
       body: filteredOrders.map((o) => [
         `#${o.id}`,
         o.table_number,
         o.payment_status,
+        o.items.length,
+        getTotalQuantity(o),
         (Number(o.total_amount) || 0).toFixed(2),
-        o.items.map((i) => i.name).join(', '),
       ]),
+
       headStyles: { fillColor: [30, 41, 59] },
     });
 
@@ -130,8 +130,9 @@ export default function Orders() {
       'Order #': o.id,
       Table: o.table_number,
       Status: o.payment_status,
+      Products: o.items.length,
+      'Total Quantity': getTotalQuantity(o),
       Amount: o.total_amount,
-      Items: o.items.map((i) => `${i.name} (x${i.quantity})`).join(', '),
     }));
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(wsData);
@@ -147,6 +148,8 @@ export default function Orders() {
         return 'text-green-600';
       case 'canceled':
         return 'text-red-600';
+      case 'retracted':
+        return 'text-orange-600';
       default:
         return 'text-gray-500';
     }
@@ -172,92 +175,115 @@ export default function Orders() {
     }
   };
 
+  const handleRetractOrder = (order: Order) => {
+    // Disable retract for served/paid/canceled/retracted orders
+    if (
+      ['served', 'paid', 'canceled', 'retracted'].includes(order.payment_status)
+    )
+      return;
+
+    setSelectedOrder(order);
+    setRetractReason('');
+    setRetractModalOpen(true);
+  };
+
+  const handleRetractSubmit = async (orderId: number) => {
+    if (!retractReason.trim()) return;
+
+    setIsRetracting(true);
+
+    try {
+      await api.put(`/orders/${orderId}/retract`, { reason: retractReason });
+
+      // Update local orders
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === orderId
+            ? {
+                ...o,
+                payment_status: 'retracted',
+                retract_reason: retractReason,
+              }
+            : o
+        )
+      );
+
+      // Update modal if currently viewing
+      if (selectedOrder?.id === orderId) {
+        setSelectedOrder({
+          ...selectedOrder,
+          payment_status: 'retracted',
+          retract_reason: retractReason,
+        });
+      }
+
+      setRetractModalOpen(false);
+      setRetractReason('');
+    } catch (err) {
+      console.error('Failed to retract order', err);
+      alert('Failed to retract order.');
+    } finally {
+      setIsRetracting(false);
+    }
+  };
+
+  const getTotalQuantity = (order: Order) =>
+    order.items.reduce((sum, i) => sum + i.quantity, 0);
   // Apply filter and search
   const filteredOrders = orders.filter((o) => {
     if (filter !== 'all' && o.payment_status !== filter) return false;
-
     if (!search) return true;
 
     const term = search.toLowerCase();
 
+    // Order-level fields
     if (o.id.toString().includes(term)) return true;
     if (o.table_number.toString().includes(term)) return true;
+    if (o.payment_status.toLowerCase().includes(term)) return true;
 
-    if (
-      o.items.some(
-        (item) =>
-          item.name.toLowerCase().includes(term) ||
-          item.quantity.toString().includes(term) ||
-          item.price.toString().includes(term)
-      )
-    ) {
-      return true;
-    }
+    // Products (Unique)
+    if (o.items.length.toString().includes(term)) return true;
+
+    // Total Quantity
+    if (getTotalQuantity(o).toString().includes(term)) return true;
+
+    // Total Amount
+    if (Number(o.total_amount).toString().includes(term)) return true;
+
+    // Product names (still useful)
+    if (o.items.some((i) => i.name.toLowerCase().includes(term))) return true;
 
     return false;
   });
 
-  const flattenedRows: OrderRow[] = orders
-    .filter((o) => {
-      if (filter !== 'all' && o.payment_status !== filter) return false;
-      return true;
-    })
-    .flatMap((o) =>
-      o.items.map((item) => ({
-        orderId: o.id,
-        table_number: o.table_number,
-        payment_status: o.payment_status,
-        total_amount: o.total_amount,
-        payment_method: o.payment_method,
-        created_at: o.created_at,
-        item,
-      }))
-    )
-    .filter((row) => {
-      if (!search) return true;
-      const term = search.toLowerCase();
-      if (row.orderId.toString().includes(term)) return true;
-      if (row.table_number.toString().includes(term)) return true;
-      if (row.payment_status.toLowerCase().includes(term)) return true;
-      if (row.item.name.toLowerCase().includes(term)) return true;
-      if (row.item.quantity.toString().includes(term)) return true;
-      if (row.item.price.toString().includes(term)) return true;
-      return false;
-    });
+  const sortedOrders = [...filteredOrders].sort((a, b) => {
+    if (!sortConfig.key) return a.id - b.id;
 
-  const sortedRows = [...flattenedRows].sort((a, b) => {
-    if (!sortConfig.key) return a.orderId - b.orderId;
-    const { key, direction } = sortConfig;
+    let valA = 0;
+    let valB = 0;
 
-    let valA: number, valB: number;
+    switch (sortConfig.key) {
+      case 'table_number':
+        valA = a.table_number;
+        valB = b.table_number;
+        break;
 
-    if (key === 'table_number') {
-      valA = Number(a.table_number);
-      valB = Number(b.table_number);
-    } else if (key === 'quantity') {
-      valA = Number(a.item.quantity);
-      valB = Number(b.item.quantity);
-    } else if (key === 'price') {
-      valA = Number(a.item.price);
-      valB = Number(b.item.price);
-    } else {
-      valA = a.orderId;
-      valB = b.orderId;
+      case 'quantity':
+        valA = getTotalQuantity(a);
+        valB = getTotalQuantity(b);
+        break;
+
+      case 'price':
+        valA = Number(a.total_amount);
+        valB = Number(b.total_amount);
+        break;
     }
 
-    return direction === 'asc' ? valA - valB : valB - valA;
+    return sortConfig.direction === 'asc' ? valA - valB : valB - valA;
   });
 
-  const groupedOrdersArray: { orderId: number; rows: OrderRow[] }[] = [];
-
-  sortedRows.forEach((row) => {
-    let group = groupedOrdersArray.find((g) => g.orderId === row.orderId);
-    if (!group) {
-      group = { orderId: row.orderId, rows: [] };
-      groupedOrdersArray.push(group);
-    }
-    group.rows.push(row);
-  });
+  const getItemLabel = (order: Order) =>
+    `${getTotalQuantity(order)} item${getTotalQuantity(order) > 1 ? 's' : ''}`;
 
   const handleSort = (key: SortConfig['key']) => {
     setSortConfig((prev) => ({
@@ -318,7 +344,7 @@ export default function Orders() {
       {/* Filters & Search */}
       <div className="flex flex-col gap-4 mb-6 md:flex-row md:items-center md:justify-between">
         <div className="flex flex-wrap gap-4 mt-2 text-sm font-semibold">
-          {['all', 'unpaid', 'paid', 'canceled'].map((f) => (
+          {['all', 'unpaid', 'paid', 'canceled', 'retracted'].map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f as any)}
@@ -361,7 +387,7 @@ export default function Orders() {
           <thead className="text-white bg-primary">
             <tr>
               <th className="px-4 py-3">Order #</th>
-              <th className="px-4 py-3">Product Name</th>
+              <th className="px-4 py-3 text-center">Products</th>
               <th
                 className="px-4 py-3 text-center cursor-pointer"
                 onClick={() => handleSort('table_number')}
@@ -401,112 +427,94 @@ export default function Orders() {
                     : '⇅'}
                 </span>
               </th>
+              <th className="px-4 py-3 text-center">Payment Method</th>
               <th className="py-2 text-center">Status</th>
               <th className="px-4 py-3 text-center">Action</th>
             </tr>
           </thead>
 
           <tbody>
-            {groupedOrdersArray.length === 0 && (
+            {filteredOrders.length === 0 && (
               <tr>
-                <td colSpan={7} className="p-6 text-center text-gray-500">
+                <td colSpan={8} className="p-6 text-center text-gray-500">
                   No orders found.
                 </td>
               </tr>
             )}
 
-            {groupedOrdersArray.map((group) => {
-              const rows = group.rows;
-              return rows.map((row, idx) => (
-                <tr
-                  key={`${row.orderId}-${row.item.id}`}
-                  className="transition border-b last:border-b-0 hover:bg-gray-50"
+            {sortedOrders.map((order) => (
+              <tr key={order.id} className="border-b hover:bg-gray-50">
+                {/* Order # */}
+                <td
+                  className="px-4 py-3 font-semibold cursor-pointer hover:underline"
+                  onClick={() => {
+                    setSelectedOrder(order);
+                    setModalOpen(true);
+                  }}
                 >
-                  {idx === 0 && (
-                    <td
-                      rowSpan={rows.length}
-                      className="px-4 py-3 font-semibold align-middle cursor-pointer hover:underline"
-                      onClick={() => {
-                        const order = orders.find((o) => o.id === row.orderId);
-                        if (order) {
-                          setSelectedOrder(order);
-                          setModalOpen(true);
-                        }
-                      }}
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          const order = orders.find(
-                            (o) => o.id === row.orderId
-                          );
-                          if (order) {
-                            setSelectedOrder(order);
-                            setModalOpen(true);
-                          }
-                        }
-                      }}
-                      aria-label={`View details for order #${row.orderId}`}
+                  #{order.id}
+                </td>
+
+                {/* Items */}
+                <td className="px-4 py-3 font-medium text-center">
+                  {getUniqueProductsLabel(order)}
+                </td>
+
+                {/* Table */}
+                <td className="px-4 py-3 text-center">{order.table_number}</td>
+
+                {/* Quantity */}
+                <td className="px-4 py-3 text-center">
+                  {getTotalQuantity(order)}
+                </td>
+
+                {/* Total Price */}
+                <td className="px-4 py-3 text-center">
+                  ₱{Number(order.total_amount).toLocaleString()}
+                </td>
+
+                {/* Payment Method */}
+                <td className="px-4 py-3 text-center">
+                  {formatPaymentMethod(order.payment_method)}
+                </td>
+
+                {/* Status */}
+                <td
+                  className={`text-center font-medium ${getStatusColor(
+                    order.payment_status
+                  )}`}
+                >
+                  {order.payment_status.charAt(0).toUpperCase() +
+                    order.payment_status.slice(1)}
+                </td>
+
+                {/* Action */}
+                <td className="flex items-center justify-center px-4 py-3 space-x-2 text-center">
+                  <button
+                    onClick={() => {
+                      setSelectedOrder(order);
+                      setModalOpen(true);
+                    }}
+                    className="inline-flex p-1 rounded hover:bg-gray-200"
+                    title="View Order"
+                  >
+                    <Eye size={18} />
+                  </button>
+
+                  {['unpaid', 'created', 'updated'].includes(
+                    order.payment_status
+                  ) && (
+                    <Button
+                      size="sm"
+                      onClick={() => handleRetractOrder(order)}
+                      disabled={updating || isRetracting}
                     >
-                      #{row.orderId}
-                    </td>
+                      Retract
+                    </Button>
                   )}
-
-                  <td className="px-4 py-3 align-middle">{row.item.name}</td>
-
-                  {idx === 0 && (
-                    <td
-                      rowSpan={rows.length}
-                      className="px-4 py-3 text-center align-middle"
-                    >
-                      {row.table_number}
-                    </td>
-                  )}
-
-                  <td className="px-4 py-3 text-center align-middle">
-                    {row.item.quantity}
-                  </td>
-                  <td className="px-4 py-3 text-center align-middle">
-                    ₱{row.item.price.toLocaleString()}
-                  </td>
-
-                  {idx === 0 && (
-                    <td
-                      rowSpan={rows.length}
-                      className={`py-2 text-center font-medium ${getStatusColor(
-                        row.payment_status
-                      )}`}
-                    >
-                      {row.payment_status.charAt(0).toUpperCase() +
-                        row.payment_status.slice(1)}
-                    </td>
-                  )}
-
-                  {idx === 0 && (
-                    <td
-                      rowSpan={rows.length}
-                      className="px-4 py-3 space-x-4 text-center align-middle"
-                    >
-                      <button
-                        onClick={() => {
-                          const order = orders.find(
-                            (o) => o.id === row.orderId
-                          );
-                          if (order) {
-                            setSelectedOrder(order);
-                            setModalOpen(true);
-                          }
-                        }}
-                        aria-label={`View order #${row.orderId} details`}
-                        className="inline-flex items-center justify-center p-1 rounded hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                        type="button"
-                      >
-                        <Eye size={18} />
-                      </button>
-                    </td>
-                  )}
-                </tr>
-              ));
-            })}
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
@@ -526,7 +534,7 @@ export default function Orders() {
           </h2>
           <h3 className="mb-2 text-xl font-medium">Order Details</h3>
 
-          <table className="w-full mb-6 text-sm border table-fixed">
+          <table className="w-full mb-6 text-sm border border-collapse">
             <thead>
               <tr className="border-b bg-gray-50">
                 <th className="py-2 text-left w-[60%]">Product Name</th>
@@ -536,8 +544,11 @@ export default function Orders() {
               </tr>
             </thead>
             <tbody>
-              {selectedOrder.items.map((item) => (
-                <tr key={item.id} className="border-b">
+              {selectedOrder.items.map((item, index) => (
+                <tr
+                  key={`${selectedOrder.id}-${item.id}-${index}`}
+                  className="border-b"
+                >
                   <td className="py-1 w-[60%]">{item.name}</td>
                   <td className="py-1 text-center w-[20%]">
                     {selectedOrder.table_number}
@@ -558,7 +569,9 @@ export default function Orders() {
             </p>
           </div>
 
-          {selectedOrder.payment_status !== 'canceled' && (
+          {!['canceled', 'retracted'].includes(
+            selectedOrder.payment_status
+          ) && (
             <div className="flex gap-3">
               <PrintReceipt
                 order={{
@@ -571,6 +584,7 @@ export default function Orders() {
 
               {selectedOrder.payment_status === 'unpaid' && (
                 <Button
+                  variant="secondary"
                   onClick={() => handleBillOut(selectedOrder.id)}
                   disabled={updating}
                 >
@@ -579,6 +593,42 @@ export default function Orders() {
               )}
             </div>
           )}
+        </Modal>
+      )}
+
+      {retractModalOpen && selectedOrder && (
+        <Modal
+          isOpen={retractModalOpen}
+          onClose={() => setRetractModalOpen(false)}
+        >
+          <h2 className="mb-4 text-lg font-medium">
+            Retract Order #{selectedOrder.id}
+          </h2>
+          <p className="mb-2 text-sm text-gray-600">
+            Please provide a reason for retracting this order:
+          </p>
+          <textarea
+            className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/60"
+            rows={4}
+            value={retractReason}
+            onChange={(e) => setRetractReason(e.target.value)}
+            placeholder="Enter reason..."
+          />
+          <div className="flex justify-end gap-2 mt-4">
+            <Button
+              variant="secondary"
+              onClick={() => setRetractModalOpen(false)}
+              disabled={isRetracting}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => handleRetractSubmit(selectedOrder.id)}
+              disabled={isRetracting || !retractReason.trim()}
+            >
+              {isRetracting ? 'Retracting...' : 'Retract'}
+            </Button>
+          </div>
         </Modal>
       )}
     </>
