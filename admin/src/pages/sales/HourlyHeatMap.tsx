@@ -43,8 +43,12 @@ export default function HourlyHeatmap() {
     fetchData(date);
   }, []);
 
+  const visibleData = data.filter(
+    (r) => r.orders_count > 0 || r.total_sales > 0
+  );
+
   const exportExcel = () => {
-    const sheet = XLSX.utils.json_to_sheet(data);
+    const sheet = XLSX.utils.json_to_sheet(visibleData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, sheet, 'Hourly Heatmap');
     XLSX.writeFile(wb, `hourly_heatmap_${date}.xlsx`);
@@ -54,7 +58,11 @@ export default function HourlyHeatmap() {
     const doc = new jsPDF();
     autoTable(doc, {
       head: [['Hour', 'Orders', 'Sales']],
-      body: data.map((r) => [r.hour + ':00', r.orders_count, r.total_sales]),
+      body: visibleData.map((r) => [
+        `${r.hour}:00`,
+        r.orders_count,
+        r.total_sales,
+      ]),
       headStyles: { fillColor: [110, 11, 19], textColor: 255 },
     });
     doc.save(`hourly_heatmap_${date}.pdf`);
@@ -99,22 +107,23 @@ export default function HourlyHeatmap() {
             </tr>
           </thead>
           <tbody>
-            {data.length === 0 ? (
+            {visibleData.length === 0 ? (
               <tr>
                 <td colSpan={3} className="p-6 text-center text-gray-400">
                   No data available
                 </td>
               </tr>
             ) : (
-              data.map((row, idx) => {
+              visibleData.map((row, idx) => {
+                const localHour = (row.hour + 8) % 24; // for UTC+8
                 const hourLabel =
-                  row.hour === 0
+                  localHour === 0
                     ? '12 AM'
-                    : row.hour < 12
-                    ? `${row.hour} AM`
-                    : row.hour === 12
+                    : localHour < 12
+                    ? `${localHour} AM`
+                    : localHour === 12
                     ? '12 PM'
-                    : `${row.hour - 12} PM`;
+                    : `${localHour - 12} PM`;
 
                 return (
                   <tr

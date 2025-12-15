@@ -4,6 +4,8 @@ import Button from '../components/ui/Button';
 import { format } from 'date-fns';
 import { toast } from 'react-toastify';
 import Modal from '../components/ui/Modal';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 type OrderItem = {
   name: string;
@@ -118,6 +120,58 @@ export default function Sales() {
         : Number(valB) - Number(valA);
     });
   }, [filtered, sortConfig]);
+
+  const exportOrderPDF = (order: any) => {
+    const doc = new jsPDF();
+
+    doc.text(`Order #${order.id}`, 14, 15);
+    doc.text(`Table: ${order.table_number ?? '-'}`, 14, 22);
+
+    autoTable(doc, {
+      startY: 28,
+      head: [['Item', 'Qty', 'Price', 'Subtotal']],
+      body: order.items.map((item: any) => {
+        const price = Number(item.price || 0);
+        const qty = Number(item.quantity || 0);
+        return [
+          item.name,
+          qty,
+          `₱${price.toFixed(2)}`,
+          `₱${(price * qty).toFixed(2)}`,
+        ];
+      }),
+      headStyles: {
+        fillColor: [110, 11, 19], // same as sales summary
+        textColor: 255,
+        halign: 'center',
+      },
+      bodyStyles: {
+        fontSize: 10,
+      },
+      styles: {
+        halign: 'right',
+      },
+      columnStyles: {
+        0: { halign: 'left' },
+        1: { halign: 'center' },
+      },
+    });
+
+    autoTable(doc, {
+      startY: (doc as any).lastAutoTable.finalY + 6,
+      body: [['Total', `₱${Number(order.total_amount || 0).toFixed(2)}`]],
+      styles: {
+        fontStyle: 'bold',
+        halign: 'right',
+      },
+      columnStyles: {
+        0: { halign: 'right' },
+        1: { halign: 'right' },
+      },
+    });
+
+    doc.save(`order_${order.id}.pdf`);
+  };
 
   const pageRows = useMemo(
     () => sortedRows.slice((page - 1) * pageSize, page * pageSize),
@@ -292,7 +346,7 @@ export default function Sales() {
       >
         {selectedOrder && (
           <div className="space-y-4">
-            {/* Items */}
+            {/* Items Table */}
             <table className="w-full overflow-hidden text-sm border rounded-lg">
               <thead className="text-white bg-primary">
                 <tr>
@@ -325,7 +379,7 @@ export default function Sales() {
                         <tr className="bg-gray-50">
                           <td
                             colSpan={3}
-                            className="px-4 py-2 text-xs text-right"
+                            className="px-4 py-2 text-xs text-right text-gray-600"
                           >
                             Subtotal: ₱{(price * qty).toFixed(2)}
                           </td>
@@ -344,12 +398,8 @@ export default function Sales() {
 
             {/* Footer */}
             <div className="flex justify-end pt-4">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setSelectedOrder(null)}
-              >
-                Close
+              <Button size="md" onClick={() => exportOrderPDF(selectedOrder)}>
+                Print Order
               </Button>
             </div>
           </div>

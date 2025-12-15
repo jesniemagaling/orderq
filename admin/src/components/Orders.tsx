@@ -41,7 +41,7 @@ interface OrderLog {
 }
 
 interface SortConfig {
-  key: 'table_number' | 'price' | 'quantity' | 'products' | null;
+  key: 'order_id' | 'table_number' | 'price' | 'quantity' | 'products' | null;
   direction: 'asc' | 'desc';
 }
 
@@ -274,6 +274,11 @@ export default function Orders() {
     let valB = 0;
 
     switch (sortConfig.key) {
+      case 'order_id':
+        valA = a.id;
+        valB = b.id;
+        break;
+
       case 'table_number':
         valA = a.table_number;
         valB = b.table_number;
@@ -288,6 +293,7 @@ export default function Orders() {
         valA = Number(a.total_amount);
         valB = Number(b.total_amount);
         break;
+
       case 'products':
         valA = a.items.length;
         valB = b.items.length;
@@ -308,7 +314,7 @@ export default function Orders() {
           ? prev.direction === 'asc'
             ? 'desc'
             : 'asc'
-          : key === 'quantity' || key === 'price' || key === 'products'
+          : key === 'order_id' || key === 'price' || key === 'quantity'
           ? 'desc'
           : 'asc',
     }));
@@ -409,7 +415,20 @@ export default function Orders() {
         <table className="min-w-full text-sm border-collapse table-auto">
           <thead className="sticky top-0 z-10 text-white bg-primary">
             <tr>
-              <th className="px-4 py-3">Order #</th>
+              <th
+                className="px-4 py-3 text-center cursor-pointer select-none"
+                onClick={() => handleSort('order_id')}
+              >
+                Order #
+                <span className="ml-1">
+                  {sortConfig.key === 'order_id'
+                    ? sortConfig.direction === 'asc'
+                      ? '↓'
+                      : '↑'
+                    : '⇅'}
+                </span>
+              </th>
+
               <th
                 className="px-4 py-3 text-center cursor-pointer select-none"
                 onClick={() => handleSort('products')}
@@ -633,8 +652,8 @@ export default function Orders() {
             </div>
           </div>
 
-          {/* Actions: Only for unpaid orders */}
-          {selectedOrder.payment_status === 'unpaid' && (
+          {/* Actions: Print allowed for paid & unpaid */}
+          {['unpaid', 'paid'].includes(selectedOrder.payment_status) && (
             <div className="flex justify-end gap-3 pt-4 mt-6 border-t">
               <PrintReceipt
                 order={{
@@ -645,13 +664,15 @@ export default function Orders() {
                 onConfirm={() => {}}
               />
 
-              <Button
-                variant="primary"
-                onClick={() => handleBillOut(selectedOrder.id)}
-                disabled={updating}
-              >
-                {updating ? 'Processing...' : 'Bill Out'}
-              </Button>
+              {selectedOrder.payment_status === 'unpaid' && (
+                <Button
+                  variant="primary"
+                  onClick={() => handleBillOut(selectedOrder.id)}
+                  disabled={updating}
+                >
+                  {updating ? 'Processing...' : 'Bill Out'}
+                </Button>
+              )}
             </div>
           )}
         </Modal>

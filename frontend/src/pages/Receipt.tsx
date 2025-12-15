@@ -80,7 +80,7 @@ export default function Receipt() {
             {order.items.map((item: any, i: number) => (
               <div key={i} className="flex justify-between">
                 <span>{item.name}</span>
-                <span>₱{item.price}</span>
+                <span>&#8369;{item.price}</span>
               </div>
             ))}
           </div>

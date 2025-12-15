@@ -74,7 +74,7 @@ export default function Overview() {
           hourlyRes,
         ] = await Promise.allSettled([
           api.get('/tables'),
-          api.get('/orders?limit=10&sort=desc'),
+          api.get('/orders?limit=12&sort=desc'),
           api.get('/orders'),
           api.get('/menu/top-selling'),
           api.get(`/sales/summary?start=${date}&end=${date}`),

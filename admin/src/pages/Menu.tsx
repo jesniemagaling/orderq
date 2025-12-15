@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import api from '../lib/axios';
 import { adminSocket } from '../lib/socket';
 import { PlusCircle, Edit, Trash2 } from 'lucide-react';
@@ -17,6 +17,8 @@ interface MenuItem {
   status: 'in_stock' | 'out_of_stock';
 }
 
+type MenuSortKey = 'id' | 'stocks' | 'price' | null;
+
 export default function Menu() {
   const [menu, setMenu] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,6 +29,20 @@ export default function Menu() {
   >('all');
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [search, setSearch] = useState('');
+  const [filterProductId, setFilterProductId] = useState('');
+  const [filterName, setFilterName] = useState('');
+  const [filterStocksMin, setFilterStocksMin] = useState<number | ''>('');
+  const [filterStocksMax, setFilterStocksMax] = useState<number | ''>('');
+  const [filterPriceMin, setFilterPriceMin] = useState<number | ''>('');
+  const [filterPriceMax, setFilterPriceMax] = useState<number | ''>('');
+  const [sortConfig, setSortConfig] = useState<{
+    key: MenuSortKey;
+    direction: 'asc' | 'desc';
+  }>({
+    key: null,
+    direction: 'asc',
+  });
 
   const openEditModal = (id: number) => {
     setSelectedId(id);
@@ -100,13 +116,90 @@ export default function Menu() {
     return isNaN(num) ? '₱0.00' : `₱${num.toFixed(2)}`;
   };
 
+  const sortIndicator = (key: MenuSortKey) => {
+    if (sortConfig.key !== key) return '⇅';
+    return sortConfig.direction === 'asc' ? '↓' : '↑';
+  };
+
+  const handleSort = (key: MenuSortKey) => {
+    setSortConfig((prev) => ({
+      key,
+      direction:
+        prev.key === key
+          ? prev.direction === 'asc'
+            ? 'desc'
+            : 'asc'
+          : key === 'price' || key === 'stocks'
+          ? 'desc'
+          : 'asc',
+    }));
+  };
+
   // Filtering logic
   const filteredMenu = menu.filter((item) => {
+    // Category & stock filters
     const matchesCategory =
       selectedCategory === 'All' || item.category === selectedCategory;
     const matchesStock = stockFilter === 'all' || item.status === stockFilter;
-    return matchesCategory && matchesStock;
+
+    // Search filter
+    const term = search.toLowerCase();
+    const matchesSearch =
+      item.name.toLowerCase().includes(term) ||
+      item.category.toLowerCase().includes(term) ||
+      item.description.toLowerCase().includes(term) ||
+      item.id.toString().includes(term);
+
+    // Column filters
+    const matchesProductId =
+      !filterProductId || item.id.toString().includes(filterProductId);
+    const matchesName =
+      !filterName || item.name.toLowerCase().includes(filterName.toLowerCase());
+    const matchesStocks =
+      (filterStocksMin === '' || item.stocks >= filterStocksMin) &&
+      (filterStocksMax === '' || item.stocks <= filterStocksMax);
+    const matchesPrice =
+      (filterPriceMin === '' || Number(item.price) >= filterPriceMin) &&
+      (filterPriceMax === '' || Number(item.price) <= filterPriceMax);
+
+    return (
+      matchesCategory &&
+      matchesStock &&
+      matchesSearch &&
+      matchesProductId &&
+      matchesName &&
+      matchesStocks &&
+      matchesPrice
+    );
   });
+
+  const sortedMenu = useMemo(() => {
+    if (!sortConfig.key) return filteredMenu;
+
+    return [...filteredMenu].sort((a, b) => {
+      let valA: number = 0;
+      let valB: number = 0;
+
+      switch (sortConfig.key) {
+        case 'id':
+          valA = a.id;
+          valB = b.id;
+          break;
+
+        case 'stocks':
+          valA = a.stocks;
+          valB = b.stocks;
+          break;
+
+        case 'price':
+          valA = Number(a.price);
+          valB = Number(b.price);
+          break;
+      }
+
+      return sortConfig.direction === 'asc' ? valA - valB : valB - valA;
+    });
+  }, [filteredMenu, sortConfig]);
 
   return (
     <>
@@ -129,6 +222,19 @@ export default function Menu() {
                 </option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <label className="block mb-2 text-sm font-medium text-gray-700">
+              Search
+            </label>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by name, category, description..."
+              className="px-2 py-1 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/60"
+            />
           </div>
 
           <div>
@@ -170,99 +276,99 @@ export default function Menu() {
       {loading ? (
         <p>Loading menu...</p>
       ) : (
-        <div className="overflow-x-auto shadow-inner rounded-xl">
-          <Swiper
-            slidesPerView="auto"
-            spaceBetween={0}
-            freeMode={true}
-            grabCursor={true}
-            allowTouchMove={true}
-            className="min-w-[1190px]"
-          >
-            <SwiperSlide style={{ width: 'auto' }}>
-              <table className="min-w-[1190px] w-full text-sm text-left border-collapse table-auto">
-                <thead className="text-white bg-primary">
-                  <tr>
-                    <th className="p-2 font-semibold text-center">
-                      Product ID
-                    </th>
-                    <th className="p-2 font-semibold">Status</th>
-                    <th className="p-2 font-semibold">Product Name</th>
-                    <th className="p-2 font-semibold">Category</th>
-                    <th className="p-2 font-semibold">Description</th>
-                    <th className="p-2 font-semibold text-center">Stocks</th>
-                    <th className="p-2 font-semibold text-center">Price</th>
-                    <th className="p-2 font-semibold text-center">Action</th>
+        <div className="overflow-auto max-h-[600px] shadow-inner rounded-xl">
+          <table className="min-w-[1190px] w-full text-sm text-left border-collapse table-auto">
+            <thead className="sticky top-0 z-10 text-white bg-primary">
+              <tr>
+                <th
+                  className="p-2 font-semibold text-center cursor-pointer"
+                  onClick={() => handleSort('id')}
+                >
+                  Product ID <span className="ml-1">{sortIndicator('id')}</span>
+                </th>
+                <th className="p-2 font-semibold">Status</th>
+                <th className="p-2 font-semibold">Product Name</th>
+                <th className="p-2 font-semibold">Category</th>
+                <th className="p-2 font-semibold">Description</th>
+                <th
+                  className="p-2 font-semibold text-center cursor-pointer"
+                  onClick={() => handleSort('stocks')}
+                >
+                  Stocks <span className="ml-1">{sortIndicator('stocks')}</span>
+                </th>
+                <th
+                  className="p-2 font-semibold text-center cursor-pointer"
+                  onClick={() => handleSort('price')}
+                >
+                  Price <span className="ml-1">{sortIndicator('price')}</span>
+                </th>
+                <th className="p-2 font-semibold text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedMenu.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="py-6 text-center text-gray-500">
+                    No menu items found for selected filters.
+                  </td>
+                </tr>
+              ) : (
+                sortedMenu.map((item) => (
+                  <tr
+                    key={item.id}
+                    className="transition border-b hover:bg-gray-50"
+                  >
+                    <td className="p-3 text-center text-gray-700">
+                      #{item.id.toString().padStart(6, '0')}
+                    </td>
+                    <td className="p-3">
+                      <span
+                        className={`${
+                          item.status === 'in_stock'
+                            ? 'text-yellow-600'
+                            : 'text-red-600'
+                        }`}
+                      >
+                        {item.status === 'in_stock'
+                          ? 'In Stock'
+                          : 'Out of Stock'}
+                      </span>
+                    </td>
+                    <td className="p-3 text-gray-800">{item.name}</td>
+                    <td className="p-3 text-gray-800">
+                      {item.category || '—'}
+                    </td>
+                    <td className="max-w-xs p-3 text-gray-500 truncate">
+                      {item.description || '—'}
+                    </td>
+                    <td className="p-3 text-center text-gray-700">
+                      {item.stocks}
+                    </td>
+                    <td className="p-3 text-center text-gray-700">
+                      {formatPrice(item.price)}
+                    </td>
+                    <td className="p-3 space-x-3 text-center">
+                      <button
+                        className="inline-flex items-center gap-1 font-medium text-green-600 hover:text-green-800"
+                        onClick={() => openEditModal(item.id)}
+                      >
+                        <Edit size={16} /> Edit
+                      </button>
+                      <button
+                        className="inline-flex items-center gap-1 font-medium text-red-600 hover:text-red-800"
+                        onClick={() => handleDelete(item.id, item.name)}
+                      >
+                        <Trash2 size={16} /> Delete
+                      </button>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {filteredMenu.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={8}
-                        className="py-6 text-center text-gray-500"
-                      >
-                        No menu items found for selected filters.
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredMenu.map((item) => (
-                      <tr
-                        key={item.id}
-                        className="transition border-b hover:bg-gray-50"
-                      >
-                        <td className="p-3 text-center text-gray-700">
-                          #{item.id.toString().padStart(6, '0')}
-                        </td>
-                        <td className="p-3">
-                          <span
-                            className={`${
-                              item.status === 'in_stock'
-                                ? 'text-yellow-600'
-                                : 'text-red-600'
-                            }`}
-                          >
-                            {item.status === 'in_stock'
-                              ? 'In Stock'
-                              : 'Out of Stock'}
-                          </span>
-                        </td>
-                        <td className="p-3 text-gray-800">{item.name}</td>
-                        <td className="p-3 text-gray-800">
-                          {item.category || '—'}
-                        </td>
-                        <td className="max-w-xs p-3 text-gray-500 truncate">
-                          {item.description || '—'}
-                        </td>
-                        <td className="p-3 text-center text-gray-700">
-                          {item.stocks}
-                        </td>
-                        <td className="p-3 text-center text-gray-700">
-                          {formatPrice(item.price)}
-                        </td>
-                        <td className="p-3 space-x-3 text-center">
-                          <button
-                            className="inline-flex items-center gap-1 font-medium text-green-600 hover:text-green-800"
-                            onClick={() => openEditModal(item.id)}
-                          >
-                            <Edit size={16} /> Edit
-                          </button>
-                          <button
-                            className="inline-flex items-center gap-1 font-medium text-red-600 hover:text-red-800"
-                            onClick={() => handleDelete(item.id, item.name)}
-                          >
-                            <Trash2 size={16} /> Delete
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </SwiperSlide>
-          </Swiper>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       )}
+
       <EditMenu
         isOpen={isEditOpen}
         onClose={closeEditModal}
