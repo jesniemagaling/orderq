@@ -307,7 +307,7 @@ export default function Orders() {
       <div className="flex items-center justify-between mb-3">
         <h1 className="text-3xl font-bold">Orders</h1>
         <Button
-          onClick={() => (window.location.href = '/admin/order-logs')}
+          onClick={() => (window.location.href = '/order-logs')}
           className="flex items-center gap-2"
         >
           Orders Audit
