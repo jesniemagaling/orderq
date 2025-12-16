@@ -17,7 +17,6 @@ app.set('trust proxy', 1);
 
 // Allowed frontend origins
 const allowedOrigins = [
-  process.env.FRONTEND_URL,
   process.env.FRONTEND_URL_1,
   process.env.FRONTEND_URL_2,
 ].filter(Boolean);
@@ -71,6 +70,10 @@ if (process.env.NODE_ENV === 'production') {
 // HEALTH CHECK
 app.get('/', (req, res) => {
   res.send('OrderQ backend is running securely!');
+});
+
+app.get('/health', (_, res) => {
+  res.status(200).send('OK');
 });
 
 // API ROUTES

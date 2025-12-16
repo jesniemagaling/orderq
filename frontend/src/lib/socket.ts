@@ -2,12 +2,13 @@ import { io } from 'socket.io-client';
 
 const token = localStorage.getItem('sessionToken');
 
-export const socket = io('http://192.168.10.1:5000', {
+const SOCKET_URL =
+  import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+
+export const socket = io(SOCKET_URL, {
   transports: ['websocket'],
   withCredentials: true,
-  auth: {
-    token,
-  },
+  auth: { token },
 });
 
 // Debug logs
@@ -23,7 +24,6 @@ socket.on('disconnect', (reason) => {
   console.warn('[Socket] Disconnected:', reason);
 });
 
-// log all events for debugging
 socket.onAny((event, ...args) => {
   console.log(`[Socket] Event received: ${event}`, args);
 });
