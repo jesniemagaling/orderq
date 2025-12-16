@@ -310,9 +310,106 @@ export default function MenuHistory() {
 
                       {isExpanded && (
                         <tr className="border-b border-gray-200 bg-gray-50">
-                          <td colSpan={5} className="p-5">
-                            {/* Expanded details remain unchanged */}
-                            {/* ... */}
+                          <td colSpan={5} className="p-5 space-y-4">
+                            {item.action === 'update' &&
+                              differences.length > 0 && (
+                                <div className="p-3 overflow-x-auto bg-white shadow-inner rounded-xl">
+                                  <div className="mb-2 font-semibold text-gray-800">
+                                    Changes
+                                  </div>
+                                  <table className="min-w-full text-sm border-collapse table-auto">
+                                    <thead className="bg-gray-100">
+                                      <tr>
+                                        <th className="p-2 text-left">Field</th>
+                                        <th className="p-2 text-left text-red-600">
+                                          Old
+                                        </th>
+                                        <th className="p-2 text-left text-green-600">
+                                          New
+                                        </th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {differences.map((diff) => (
+                                        <tr
+                                          key={diff.field}
+                                          className="border-t bg-yellow-50"
+                                        >
+                                          <td className="p-2 font-medium">
+                                            {formatField(diff.field)}
+                                          </td>
+                                          <td className="p-2 text-gray-600">
+                                            {formatValue(
+                                              diff.oldValue,
+                                              diff.field
+                                            )}
+                                          </td>
+                                          <td className="p-2 font-semibold text-gray-900">
+                                            {formatValue(
+                                              diff.newValue,
+                                              diff.field
+                                            )}
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
+
+                            {item.action === 'add' && item.new_data && (
+                              <div className="p-3 overflow-x-auto bg-white shadow-inner rounded-xl">
+                                <div className="mb-2 font-semibold text-gray-800">
+                                  New Item Details
+                                </div>
+                                <table className="min-w-full text-sm border-collapse table-auto">
+                                  <tbody>
+                                    {Object.entries(item.new_data).map(
+                                      ([key, val]) => (
+                                        <tr
+                                          key={key}
+                                          className="border-t bg-green-50"
+                                        >
+                                          <td className="p-2 font-medium">
+                                            {formatField(key)}
+                                          </td>
+                                          <td className="p-2 text-gray-900">
+                                            {formatValue(val, key)}
+                                          </td>
+                                        </tr>
+                                      )
+                                    )}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+
+                            {item.action === 'delete' && item.old_data && (
+                              <div className="p-3 overflow-x-auto bg-white shadow-inner rounded-xl">
+                                <div className="mb-2 font-semibold text-gray-800">
+                                  Deleted Item Details
+                                </div>
+                                <table className="min-w-full text-sm border-collapse table-auto">
+                                  <tbody>
+                                    {Object.entries(item.old_data).map(
+                                      ([key, val]) => (
+                                        <tr
+                                          key={key}
+                                          className="border-t bg-red-50"
+                                        >
+                                          <td className="p-2 font-medium">
+                                            {formatField(key)}
+                                          </td>
+                                          <td className="p-2 text-gray-900">
+                                            {formatValue(val, key)}
+                                          </td>
+                                        </tr>
+                                      )
+                                    )}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
                           </td>
                         </tr>
                       )}
