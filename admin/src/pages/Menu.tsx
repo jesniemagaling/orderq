@@ -5,6 +5,7 @@ import { PlusCircle, Edit, Trash2 } from 'lucide-react';
 import Button from '../components/ui/Button';
 import EditMenu from '../components/EditMenu';
 import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router';
 
 interface MenuItem {
   id: number;
@@ -35,6 +36,7 @@ export default function Menu() {
   const [filterStocksMax] = useState<number | ''>('');
   const [filterPriceMin] = useState<number | ''>('');
   const [filterPriceMax] = useState<number | ''>('');
+  const navigate = useNavigate();
 
   const [sortConfig, setSortConfig] = useState<{
     key: MenuSortKey;
@@ -257,8 +259,8 @@ export default function Menu() {
           </div>
 
           <Button
-            onClick={() => (window.location.href = '/admin/menu-history')}
             className="flex items-center gap-2"
+            onClick={() => navigate('/admin/menu-history')}
           >
             Menu History
           </Button>
