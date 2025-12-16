@@ -2,8 +2,9 @@ services:
   - type: web
     name: orderq
     env: static
-    staticPublishPath: dist
+    rootDir: frontend
     buildCommand: npm install && npm run build
+    staticPublishPath: dist
     routes:
       - type: rewrite
         source: /*
