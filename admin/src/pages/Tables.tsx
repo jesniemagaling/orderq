@@ -491,7 +491,7 @@ export default function Tables() {
                         </span>
                       </h3>
 
-                      {order.status === 'pending' && (
+                      {order.status !== 'canceled' && (
                         <Button
                           className="bg-primary"
                           onClick={() => handlePrintInvoice(order)}
