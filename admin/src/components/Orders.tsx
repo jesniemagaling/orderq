@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import api from '../lib/axios';
 import Button from '../components/ui/Button';
 import PrintReceipt from '../components/PrintReceipt';
@@ -23,21 +23,6 @@ interface Order {
     quantity: number;
     price: number;
   }[];
-}
-
-interface OrderLog {
-  id: number;
-  action:
-    | 'created'
-    | 'confirmed'
-    | 'served'
-    | 'retracted'
-    | 'canceled'
-    | 'paid'
-    | 'updated';
-  payload: any;
-  username: string | null;
-  created_at: string;
 }
 
 interface SortConfig {
@@ -302,9 +287,6 @@ export default function Orders() {
 
     return sortConfig.direction === 'asc' ? valA - valB : valB - valA;
   });
-
-  const getItemLabel = (order: Order) =>
-    `${getTotalQuantity(order)} item${getTotalQuantity(order) > 1 ? 's' : ''}`;
 
   const handleSort = (key: SortConfig['key']) => {
     setSortConfig((prev) => ({

@@ -3,7 +3,6 @@ import api from '../lib/axios';
 import { adminSocket } from '../lib/socket';
 import { PlusCircle, Edit, Trash2 } from 'lucide-react';
 import Button from '../components/ui/Button';
-import { Swiper, SwiperSlide } from 'swiper/react';
 import EditMenu from '../components/EditMenu';
 import { toast } from 'react-toastify';
 
@@ -30,12 +29,13 @@ export default function Menu() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [search, setSearch] = useState('');
-  const [filterProductId, setFilterProductId] = useState('');
-  const [filterName, setFilterName] = useState('');
-  const [filterStocksMin, setFilterStocksMin] = useState<number | ''>('');
-  const [filterStocksMax, setFilterStocksMax] = useState<number | ''>('');
-  const [filterPriceMin, setFilterPriceMin] = useState<number | ''>('');
-  const [filterPriceMax, setFilterPriceMax] = useState<number | ''>('');
+  const [filterProductId] = useState('');
+  const [filterName] = useState('');
+  const [filterStocksMin] = useState<number | ''>('');
+  const [filterStocksMax] = useState<number | ''>('');
+  const [filterPriceMin] = useState<number | ''>('');
+  const [filterPriceMax] = useState<number | ''>('');
+
   const [sortConfig, setSortConfig] = useState<{
     key: MenuSortKey;
     direction: 'asc' | 'desc';

@@ -6,8 +6,7 @@ import {
   Table,
   TrendingUp,
 } from 'lucide-react';
-import { useLocation, useNavigate, useNavigationType } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import SidebarItem from './SidebarItem';
 import SalesSubItem from './SalesSubItem';
 
@@ -29,7 +28,6 @@ const SALES_TABS = [
 
 export default function Sidebar({ role }: SidebarProps) {
   const location = useLocation();
-  const navigate = useNavigate();
 
   const isSalesRoute = location.pathname.startsWith('/admin/sales');
   const isSalesMainActive = location.pathname === '/admin/sales';

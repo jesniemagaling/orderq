@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import api from '../lib/axios';
 import Button from '../components/ui/Button';
 import { format } from 'date-fns';
@@ -25,8 +25,8 @@ export default function OrdersHistory() {
     return d.toISOString().slice(0, 10);
   });
   const [end, setEnd] = useState(() => new Date().toISOString().slice(0, 10));
-  const [actionFilter, setActionFilter] = useState('');
-  const [userFilter, setUserFilter] = useState('');
+  const [actionFilter] = useState('');
+  const [userFilter] = useState('');
 
   const [page, setPage] = useState(1);
   const [pageSize] = useState(15);

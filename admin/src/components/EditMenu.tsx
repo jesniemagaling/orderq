@@ -37,7 +37,6 @@ export default function EditMenu({
 
   const [image, setImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [existingImage, setExistingImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<string[]>([]);
 
@@ -70,7 +69,6 @@ export default function EditMenu({
           }
           console.log('Image full URL:', fullUrl);
           setPreview(fullUrl);
-          setExistingImage(item.image_url);
         }
       } catch (err) {
         console.error('Failed to fetch menu item:', err);
@@ -150,7 +148,6 @@ export default function EditMenu({
           updatedRes.data.image_url
         }?t=${Date.now()}`;
         setPreview(fullUrl);
-        setExistingImage(updatedRes.data.image_url);
       }
 
       await onUpdated();

@@ -293,30 +293,6 @@ export default function Tables() {
     }
   };
 
-  const handleDownloadQRCode = async (table: Table) => {
-    try {
-      const qrData = allQR.find((x) => x.id === table.id);
-
-      if (!qrData?.qr_image_url) {
-        alert('No QR found for this table.');
-        return;
-      }
-
-      const response = await fetch(qrData.qr_image_url);
-      const blob = await response.blob();
-
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = `Table-${table.table_number}-QR.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (err) {
-      console.error('QR download failed:', err);
-      alert('Failed to download QR code.');
-    }
-  };
-
   const handleRegenerateAllQR = async () => {
     const ok = confirm(
       'Are you sure you want to regenerate all QR codes? This will overwrite existing QR codes.'

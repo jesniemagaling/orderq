@@ -1,5 +1,3 @@
-// src/components/sales/OrderDetailsModal.tsx
-import React from 'react';
 import Button from '../../components/ui/Button';
 import api from '../../lib/axios';
 import { toast } from 'react-toastify';
@@ -15,7 +13,7 @@ export default function OrderDetailsModal({ open, order, onClose }: Props) {
 
   const handleMarkPaid = async () => {
     try {
-      await api.put(`/orders/${order.id}/pay`); // adjust if endpoint differs
+      await api.put(`/orders/${order.id}/pay`);
       toast.success('Order marked as paid');
       onClose();
     } catch (err) {

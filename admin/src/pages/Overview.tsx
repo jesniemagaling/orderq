@@ -43,7 +43,6 @@ export default function Overview() {
     { hour: number; value: number }[]
   >([]);
   const [topSelling, setTopSelling] = useState<TopItem[]>([]);
-  const [salesInterval] = useState<'hourly' | 'weekly' | 'monthly'>('hourly');
 
   const formatCurrency = (value: number) =>
     value.toLocaleString(undefined, {
@@ -140,30 +139,6 @@ export default function Overview() {
     };
   }, []);
 
-  /*
-  const getPaddedSalesSeries = () => {
-    if (!salesSeries.length) return [];
-
-    if (salesSeries.length >= 3) return salesSeries;
-
-    const firstHour = salesSeries[0].hour;
-    const lastHour = salesSeries[salesSeries.length - 1].hour;
-
-    const paddingBefore = { hour: (firstHour - 1 + 24) % 24, value: 0 };
-    const paddingAfter = { hour: (lastHour + 1) % 24, value: 0 };
-
-    if (salesSeries.length === 1) {
-      return [paddingBefore, salesSeries[0], paddingAfter];
-    }
-
-    if (salesSeries.length === 2) {
-      return [paddingBefore, ...salesSeries, paddingAfter];
-    }
-
-    return salesSeries;
-  };
-  */
-
   const getFull24HourSeries = () => {
     const fullHours = Array.from({ length: 24 }, (_, i) => i);
 
@@ -208,6 +183,10 @@ export default function Overview() {
       y: { beginAtZero: true },
     },
   };
+
+  if (loading) {
+    return <p>Loading dashboard...</p>;
+  }
 
   return (
     <div className="space-y-6">

@@ -68,6 +68,14 @@ export default function HourlyHeatmap() {
     doc.save(`hourly_heatmap_${date}.pdf`);
   };
 
+  if (loading) {
+    return <p>Loading hourly heatmap...</p>;
+  }
+
+  if (error) {
+    return <p className="text-red-500">Error: {error}</p>;
+  }
+
   return (
     <>
       <h2 className="mb-4 text-2xl font-bold text-gray-800">Hourly Heatmap</h2>

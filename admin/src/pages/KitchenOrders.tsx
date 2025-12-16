@@ -100,7 +100,7 @@ export default function KitchenOrders() {
       }
     });
 
-    adminSocket.on('tableStatusUpdate', async ({ tableId, status }) => {
+    adminSocket.on('tableStatusUpdate', async ({ tableId }) => {
       await fetchOrders();
       await fetchTables();
 

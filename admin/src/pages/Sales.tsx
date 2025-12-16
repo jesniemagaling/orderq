@@ -85,7 +85,6 @@ export default function Sales() {
     setPage(1);
   }, [rows, start, end, search]);
 
-  const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const sortedRows = useMemo(() => {
     if (!sortConfig.key) return filtered;
 
