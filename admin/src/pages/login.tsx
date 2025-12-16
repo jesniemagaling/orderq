@@ -19,7 +19,7 @@ export default function Login() {
     setError('');
 
     try {
-      const res = await api.post('/api/auth/login', form);
+      const res = await api.post('/auth/login', form);
 
       const { token, user } = res.data;
       const role = user.role;
