@@ -26,10 +26,15 @@ export default function MenuHistory() {
     key: MenuSortKey;
     direction: 'asc' | 'desc';
   }>({ key: 'created_at', direction: 'desc' });
+  const USE_BACKEND_DIRECT = true;
 
   const fetchHistory = async () => {
     try {
-      const res = await api.get<MenuHistoryItem[]>('/menu/history');
+      const res = await api.get<MenuHistoryItem[]>(
+        USE_BACKEND_DIRECT
+          ? 'https://orderq-backend.onrender.com/api/menu/history'
+          : '/menu/history'
+      );
       setHistory(res.data);
     } catch (err) {
       console.error('Failed to fetch menu history:', err);
