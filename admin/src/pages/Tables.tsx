@@ -491,7 +491,7 @@ export default function Tables() {
                         </span>
                       </h3>
 
-                      {order.status !== 'canceled' && (
+                      {order.status === 'pending' && (
                         <Button
                           className="bg-primary"
                           onClick={() => handlePrintInvoice(order)}
@@ -620,13 +620,11 @@ export default function Tables() {
             </div>
 
             {/* Actions */}
-            {printOrder.payment_status === 'unpaid' && (
-              <div className="flex justify-end gap-3 pt-4 mt-6 border-t">
-                <Button variant="primary" onClick={handleConfirmPrint}>
-                  Confirm Print
-                </Button>
-              </div>
-            )}
+            <div className="flex justify-end gap-3 pt-4 mt-6 border-t">
+              <Button variant="primary" onClick={handleConfirmPrint}>
+                Confirm Print
+              </Button>
+            </div>
           </>
         )}
       </Modal>
