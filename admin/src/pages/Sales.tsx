@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import api from '../lib/axios';
 import Button from '../components/ui/Button';
-import { format } from 'date-fns';
 import { toast } from 'react-toastify';
 import Modal from '../components/ui/Modal';
 import jsPDF from 'jspdf';
@@ -284,10 +283,6 @@ export default function Sales() {
               </tr>
             ) : (
               pageRows.map((r) => {
-                const date = r.created_at
-                  ? new Date(r.created_at.replace('Z', ''))
-                  : null;
-
                 return (
                   <tr key={r.id} className="border-t hover:bg-primary/5">
                     <td className="px-4 py-3 font-medium">#{r.id}</td>
