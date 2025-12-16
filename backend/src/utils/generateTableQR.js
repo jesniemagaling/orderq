@@ -15,9 +15,12 @@ export const generateAllTableQR = async () => {
     const outputDir = path.resolve('public/qrcodes');
     if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
-    const backendUrl = (
+    // Safe backend URL: ensures it's always a string
+    const backendUrl = String(
       process.env.BACKEND_URL || 'https://orderq-backend.onrender.com'
     ).replace(/\/$/, '');
+
+    console.log('Using backend URL for QR generation:', backendUrl);
 
     for (const table of tables) {
       if (!table.table_number) {
@@ -27,25 +30,35 @@ export const generateAllTableQR = async () => {
         continue;
       }
 
-      const qrData = `${backendUrl}/api/sessions/scan/${table.table_number}`;
-      const filePath = `${outputDir}/table-${table.table_number}.png`;
+      try {
+        const qrData = `${backendUrl}/api/sessions/scan/${table.table_number}`;
+        const filePath = path.join(
+          outputDir,
+          `table-${table.table_number}.png`
+        );
 
-      await QRCode.toFile(filePath, qrData, {
-        width: 300,
-        errorCorrectionLevel: 'H',
-      });
+        await QRCode.toFile(filePath, qrData, {
+          width: 300,
+          errorCorrectionLevel: 'H',
+        });
 
-      const qrDbPath = `/qrcodes/table-${table.table_number}.png`;
+        const qrDbPath = `/qrcodes/table-${table.table_number}.png`;
 
-      await db.query('UPDATE tables SET qr_code = ? WHERE id = ?', [
-        qrDbPath,
-        table.id,
-      ]);
+        await db.query('UPDATE tables SET qr_code = ? WHERE id = ?', [
+          qrDbPath,
+          table.id,
+        ]);
 
-      console.log(`Generated QR for Table ${table.table_number}`);
+        console.log(`Generated QR for Table ${table.table_number}`);
+      } catch (tableErr) {
+        console.error(
+          `Error generating QR for table ${table.table_number} (id=${table.id}):`,
+          tableErr
+        );
+      }
     }
 
-    console.log('All QR codes generated successfully.');
+    console.log('All QR code generation attempts completed.');
   } catch (err) {
     console.error('QR Generation Error:', err);
     console.error('Stack Trace:', err.stack);
