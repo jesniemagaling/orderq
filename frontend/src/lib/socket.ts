@@ -6,7 +6,9 @@ if (!API_URL) {
   throw new Error('VITE_API_URL is not defined');
 }
 
-const SOCKET_URL = API_URL.replace(/\/api$/, '');
+const SOCKET_URL = API_URL
+  ? API_URL.replace(/\/api$/, '')
+  : 'https://orderq-backend.onrender.com';
 
 export const socket: Socket = io(SOCKET_URL, {
   transports: ['websocket'],
