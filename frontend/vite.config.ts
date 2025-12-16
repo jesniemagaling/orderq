@@ -1,4 +1,3 @@
-// vite.config.js
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
@@ -13,14 +12,8 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5173,
-    open: false,
-    hmr: true,
-    proxy: {
-      '/api': {
-        target: 'http://192.168.1.3:5000',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
-      },
-    },
+  },
+  build: {
+    outDir: 'dist',
   },
 });
