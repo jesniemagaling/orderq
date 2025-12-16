@@ -310,7 +310,7 @@ export default function Orders() {
         <h1 className="text-3xl font-bold">Orders</h1>
         <Button
           className="flex items-center gap-2"
-          onClick={() => navigate('/admin/order-logs')}
+          onClick={() => navigate('/order-logs')}
         >
           Orders Audit
         </Button>
