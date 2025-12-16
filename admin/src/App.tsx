@@ -56,10 +56,10 @@ export default function App() {
           </Route>
 
           <Route path="/admin/orders" element={<Orders />} />
-          <Route path="/admin/order-logs" element={<OrdersHistory />} />
+          <Route path="/order-logs" element={<OrdersHistory />} />
           <Route path="/admin/menu" element={<Menu />} />
           <Route path="/admin/add-menu" element={<AddMenu />} />
-          <Route path="/admin/menu-history" element={<MenuHistory />} />
+          <Route path="/menu-history" element={<MenuHistory />} />
 
           {/* Cashier */}
           <Route path="/cashier/tables" element={<Tables />} />
