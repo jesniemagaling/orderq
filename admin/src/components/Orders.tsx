@@ -345,7 +345,7 @@ export default function Orders() {
               .filter((o) => o.payment_status === 'paid')
               .reduce((s, o) => s + Number(o.total_amount), 0)
               .toLocaleString(undefined, {
-                minimumFractionDigits: 2,
+                minimumFractionDigits: 0,
                 maximumFractionDigits: 2,
               })}
           </p>
