@@ -1,9 +1,12 @@
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
+const API_URL =
+  import.meta.env.VITE_API_URL || 'https://orderq-backend.onrender.com/api';
+
 // Create Axios instance
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
