@@ -13,9 +13,11 @@ export const generateAllTableQR = async () => {
     }
 
     const outputDir = path.resolve('public/qrcodes');
-    if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir, { recursive: true });
-    }
+    if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
+
+    const backendUrl = (
+      process.env.BACKEND_URL || 'https://orderq-backend.onrender.com'
+    ).replace(/\/$/, '');
 
     for (const table of tables) {
       if (!table.table_number) {
@@ -25,11 +27,7 @@ export const generateAllTableQR = async () => {
         continue;
       }
 
-      const qrData = `${process.env.BACKEND_URL.replace(
-        /\/$/,
-        ''
-      )}/api/sessions/scan/${table.table_number}`;
-
+      const qrData = `${backendUrl}/api/sessions/scan/${table.table_number}`;
       const filePath = `${outputDir}/table-${table.table_number}.png`;
 
       await QRCode.toFile(filePath, qrData, {
@@ -47,7 +45,7 @@ export const generateAllTableQR = async () => {
       console.log(`Generated QR for Table ${table.table_number}`);
     }
 
-    console.log(' All QR codes generated successfully.');
+    console.log('All QR codes generated successfully.');
   } catch (err) {
     console.error('QR Generation Error:', err);
     console.error('Stack Trace:', err.stack);
