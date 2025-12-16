@@ -91,8 +91,6 @@ export default function Orders() {
     setSelectedOrder(null);
   };
 
-  const getUniqueProductsCount = (order: Order) => order.items.length;
-
   const getUniqueProductsLabel = (order: Order) =>
     `${order.items.length} product${order.items.length > 1 ? 's' : ''}`;
 

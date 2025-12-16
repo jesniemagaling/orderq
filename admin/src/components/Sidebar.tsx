@@ -6,7 +6,7 @@ import {
   Table,
   TrendingUp,
 } from 'lucide-react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import SidebarItem from './SidebarItem';
 import SalesSubItem from './SalesSubItem';
 
