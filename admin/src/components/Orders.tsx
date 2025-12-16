@@ -7,6 +7,7 @@ import Modal from './ui/Modal';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
+import { useNavigate } from 'react-router';
 
 interface Order {
   id: number;
@@ -46,6 +47,7 @@ export default function Orders() {
     key: null,
     direction: 'asc',
   });
+  const navigate = useNavigate();
 
   const [retractModalOpen, setRetractModalOpen] = useState(false);
   const [retractReason, setRetractReason] = useState('');
@@ -307,8 +309,8 @@ export default function Orders() {
       <div className="flex items-center justify-between mb-3">
         <h1 className="text-3xl font-bold">Orders</h1>
         <Button
-          onClick={() => (window.location.href = '/order-logs')}
           className="flex items-center gap-2"
+          onClick={() => navigate('/admin/menu-history')}
         >
           Orders Audit
         </Button>
