@@ -50,8 +50,8 @@ export default function OrdersHistory() {
 
   // Filtering
   useEffect(() => {
-    const s = new Date(start + 'T00:00:00');
-    const e = new Date(end + 'T23:59:59');
+    const s = new Date(start + 'T00:00:00Z');
+    const e = new Date(end + 'T23:59:59Z');
 
     let out = logs.filter((log) => {
       const d = new Date(log.created_at);
