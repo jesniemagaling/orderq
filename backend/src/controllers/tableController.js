@@ -345,14 +345,16 @@ export const getAllTableQR = async (req, res) => {
       'SELECT id, table_number, qr_code FROM tables'
     );
 
-    const formatted = tables.map((t) => {
-      const base = process.env.BACKEND_URL.replace(/\/$/, '');
-      const file = t.qr_code.replace(/^\//, '');
+    const base = String(
+      process.env.BACKEND_URL || 'https://orderq-backend.onrender.com'
+    ).replace(/\/$/, '');
 
+    const formatted = tables.map((t) => {
+      const file = t.qr_code ? t.qr_code.replace(/^\//, '') : '';
       return {
         id: t.id,
         table_number: t.table_number,
-        qr_image_url: `${base}/${file}`,
+        qr_image_url: file ? `${base}/${file}` : null,
       };
     });
 
