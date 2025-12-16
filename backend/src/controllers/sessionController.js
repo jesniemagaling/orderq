@@ -228,7 +228,13 @@ export const scanSessionFromQR = async (req, res) => {
 
     console.log('FRONTEND_URL =', process.env.FRONTEND_URL);
 
-    const FE = process.env.FRONTEND_URL?.replace(/\/$/, '') || '';
+    const FE = process.env.FRONTEND_URL?.replace(/\/$/, '');
+
+    if (!FE) {
+      console.error('FRONTEND_URL is missing');
+      return res.status(500).send('Frontend URL not configured');
+    }
+
     console.log('FE cleaned =', FE);
 
     const redirectUrl = `${FE}/order?table=${table_number}&token=${sessionData.token}`;
