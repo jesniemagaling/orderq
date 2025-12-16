@@ -1,14 +1,19 @@
-import { io } from 'socket.io-client';
+import { io, Socket } from 'socket.io-client';
 
-const token = localStorage.getItem('sessionToken');
+const API_URL = import.meta.env.VITE_API_URL;
 
-const SOCKET_URL =
-  import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+if (!API_URL) {
+  throw new Error('VITE_API_URL is not defined');
+}
 
-export const socket = io(SOCKET_URL, {
+const SOCKET_URL = API_URL.replace(/\/api$/, '');
+
+export const socket: Socket = io(SOCKET_URL, {
   transports: ['websocket'],
   withCredentials: true,
-  auth: { token },
+  auth: () => ({
+    token: localStorage.getItem('sessionToken'),
+  }),
 });
 
 // Debug logs

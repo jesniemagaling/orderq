@@ -1,7 +1,12 @@
 import { io, Socket } from 'socket.io-client';
 
-const SOCKET_URL =
-  import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL;
+
+if (!API_URL) {
+  throw new Error('VITE_API_URL is not defined');
+}
+
+const SOCKET_URL = API_URL.replace(/\/api$/, '');
 
 export const adminSocket: Socket = io(SOCKET_URL, {
   transports: ['websocket'],
