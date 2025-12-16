@@ -1,21 +1,14 @@
-import { io, Socket } from 'socket.io-client';
+import { io } from 'socket.io-client';
 
-const API_URL = import.meta.env.VITE_API_URL;
+const token = localStorage.getItem('sessionToken');
 
-if (!API_URL) {
-  throw new Error('VITE_API_URL is not defined');
-}
+const SOCKET_URL =
+  import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
 
-const SOCKET_URL = API_URL
-  ? API_URL.replace(/\/api$/, '')
-  : 'https://orderq-backend.onrender.com';
-
-export const socket: Socket = io(SOCKET_URL, {
+export const socket = io(SOCKET_URL, {
   transports: ['websocket'],
   withCredentials: true,
-  auth: () => ({
-    token: localStorage.getItem('sessionToken'),
-  }),
+  auth: { token },
 });
 
 // Debug logs
