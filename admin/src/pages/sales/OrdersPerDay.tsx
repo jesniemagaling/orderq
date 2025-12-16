@@ -91,7 +91,7 @@ export default function OrdersPerDay() {
   }, [start, end]);
 
   const chartData = {
-    labels: rows.map((r) => new Date(r.day).toLocaleDateString()),
+    labels: rows.map((r) => new Date(r.day + 'T00:00:00').toLocaleDateString()),
     datasets: [
       {
         label: 'Orders',
@@ -113,7 +113,7 @@ export default function OrdersPerDay() {
     ];
     rows.forEach((r) =>
       ws.addRow({
-        date: new Date(r.day).toLocaleDateString(),
+        date: new Date(r.day + 'T00:00:00').toLocaleDateString(),
         orders: r.orders_count,
       })
     );
@@ -134,7 +134,7 @@ export default function OrdersPerDay() {
     autoTable(doc, {
       head: [['Date', 'Orders']],
       body: rows.map((r) => [
-        new Date(r.day).toLocaleDateString(),
+        new Date(r.day + 'T00:00:00').toLocaleDateString(),
         r.orders_count,
       ]),
       headStyles: {
@@ -226,11 +226,14 @@ export default function OrdersPerDay() {
                     className="transition-colors border-b border-gray-200 hover:bg-[#6e0b13]/10"
                   >
                     <td className="p-3 text-gray-800">
-                      {new Date(r.day).toLocaleDateString(undefined, {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                      })}
+                      {new Date(r.day + 'T00:00:00').toLocaleDateString(
+                        undefined,
+                        {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        }
+                      )}
                     </td>
                     <td className="p-3 font-medium text-right text-gray-800">
                       {r.orders_count}

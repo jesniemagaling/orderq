@@ -66,8 +66,8 @@ export default function Sales() {
   }, []);
 
   useEffect(() => {
-    const s = new Date(start + 'T00:00:00');
-    const e = new Date(end + 'T23:59:59');
+    const s = new Date(start + 'T00:00:00Z');
+    const e = new Date(end + 'T23:59:59Z');
 
     setFiltered(
       rows.filter((r) => {
@@ -284,7 +284,9 @@ export default function Sales() {
               </tr>
             ) : (
               pageRows.map((r) => {
-                const date = r.created_at ? new Date(r.created_at) : null;
+                const date = r.created_at
+                  ? new Date(r.created_at.replace('Z', ''))
+                  : null;
 
                 return (
                   <tr key={r.id} className="border-t hover:bg-primary/5">
@@ -293,10 +295,19 @@ export default function Sales() {
                       {r.table_number ?? '-'}
                     </td>
                     <td className="px-4 py-3 text-center">
-                      {date ? format(date, 'yyyy-MM-dd') : '-'}
+                      {r.created_at
+                        ? new Date(r.created_at).toLocaleDateString('en-PH')
+                        : '-'}
                     </td>
                     <td className="px-4 py-3 text-center">
-                      {date ? format(date, 'hh:mm:ss a') : '-'}
+                      {r.created_at
+                        ? new Date(r.created_at).toLocaleTimeString('en-PH', {
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            second: '2-digit',
+                            hour12: true,
+                          })
+                        : '-'}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <span

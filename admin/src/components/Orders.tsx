@@ -93,6 +93,11 @@ export default function Orders() {
     setSelectedOrder(null);
   };
 
+  const formatCurrency = (value: number | string) =>
+    Number(value).toLocaleString('en-PH', {
+      maximumFractionDigits: 0,
+    });
+
   const getUniqueProductsLabel = (order: Order) =>
     `${order.items.length} product${order.items.length > 1 ? 's' : ''}`;
 
@@ -338,17 +343,12 @@ export default function Orders() {
         </div>
 
         <div className="p-4 bg-white border rounded-xl">
-          <p className="text-sm text-gray-500">Total Sales</p>
-          <p className="text-2xl font-semibold">
-            ₱
-            {orders
+          <p className="text-sm text-gray-500">Total Sales</p>₱
+          {formatCurrency(
+            orders
               .filter((o) => o.payment_status === 'paid')
               .reduce((s, o) => s + Number(o.total_amount), 0)
-              .toLocaleString(undefined, {
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 2,
-              })}
-          </p>
+          )}
         </div>
       </div>
 
@@ -503,8 +503,9 @@ export default function Orders() {
                   {getTotalQuantity(order)}
                 </td>
                 <td className="px-4 py-3 text-center">
-                  ₱{Number(order.total_amount).toLocaleString()}
+                  ₱{formatCurrency(order.total_amount)}
                 </td>
+
                 <td className="px-4 py-3 text-center">
                   {formatPaymentMethod(order.payment_method)}
                 </td>
@@ -629,7 +630,7 @@ export default function Orders() {
             <div className="p-4 text-right border rounded-xl">
               <p className="text-sm text-gray-500">Total Amount</p>
               <p className="mt-1 text-2xl font-semibold">
-                ₱{Number(selectedOrder.total_amount).toLocaleString()}
+                ₱{formatCurrency(selectedOrder.total_amount)}
               </p>
             </div>
           </div>
