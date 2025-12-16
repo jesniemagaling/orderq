@@ -257,7 +257,7 @@ export default function Menu() {
           </div>
 
           <Button
-            onClick={() => (window.location.href = '/menu-history')}
+            onClick={() => (window.location.href = '/admin/menu-history')}
             className="flex items-center gap-2"
           >
             Menu History

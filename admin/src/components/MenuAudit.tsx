@@ -29,7 +29,7 @@ export default function MenuHistory() {
 
   const fetchHistory = async () => {
     try {
-      const res = await api.get<MenuHistoryItem[]>('/menu/history');
+      const res = await api.get<MenuHistoryItem[]>('/history');
       setHistory(res.data);
     } catch (err) {
       console.error('Failed to fetch menu history:', err);
