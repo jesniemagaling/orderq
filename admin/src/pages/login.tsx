@@ -19,7 +19,7 @@ export default function Login() {
     setError('');
 
     try {
-      const res = await api.post('/auth/login', form);
+      const res = await api.post('/api/auth/login', form);
 
       const { token, user } = res.data;
       const role = user.role;
@@ -40,23 +40,23 @@ export default function Login() {
 
   return (
     <div className="relative min-h-screen bg-gray-50">
-      <div className="absolute top-6 left-8 flex items-center gap-2">
-        <img src="/orderq-logo.svg" alt="OrderQ" className="h-10 w-10" />
+      <div className="absolute flex items-center gap-2 top-6 left-8">
+        <img src="/orderq-logo.svg" alt="OrderQ" className="w-10 h-10" />
         <span className="text-xl font-bold">OrderQ</span>
       </div>
 
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
-          <h2 className="mb-2 text-center text-3xl font-extrabold text-gray-900">
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="w-full max-w-md p-8 bg-white shadow-lg rounded-2xl">
+          <h2 className="mb-2 text-3xl font-extrabold text-center text-gray-900">
             Login
           </h2>
-          <p className="mb-6 text-center text-sm text-gray-500">
+          <p className="mb-6 text-sm text-center text-gray-500">
             Welcome back! Please log in to access your account.
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
+              <label className="block mb-1 text-sm font-medium text-gray-700">
                 Email
               </label>
               <input
@@ -71,7 +71,7 @@ export default function Login() {
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
+              <label className="block mb-1 text-sm font-medium text-gray-700">
                 Password
               </label>
               <input
@@ -86,7 +86,7 @@ export default function Login() {
             </div>
 
             {error && (
-              <p className="text-center text-sm text-red-500">{error}</p>
+              <p className="text-sm text-center text-red-500">{error}</p>
             )}
 
             <Button type="submit" fullWidth disabled={loading}>
