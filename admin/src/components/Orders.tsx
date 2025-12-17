@@ -343,14 +343,15 @@ export default function Orders() {
         </div>
 
         <div className="p-4 bg-white border rounded-xl">
-          <p className="text-sm text-gray-500">Total Sales</p>₱
-          <span className="text-xl font-semibold">
+          <p className="text-sm text-gray-500">Total Sales</p>
+          <p className="text-xl font-semibold">
+            ₱
             {formatCurrency(
               orders
                 .filter((o) => o.payment_status === 'paid')
                 .reduce((s, o) => s + Number(o.total_amount), 0)
             )}
-          </span>
+          </p>
         </div>
       </div>
 
