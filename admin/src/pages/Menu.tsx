@@ -266,7 +266,7 @@ export default function Menu() {
           </Button>
 
           <Button
-            onClick={() => (window.location.href = '/admin/add-menu')}
+            onClick={() => navigate('/admin/add-menu')}
             className="flex items-center gap-2 "
             variant="secondary"
           >
