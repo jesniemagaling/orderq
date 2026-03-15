@@ -5,6 +5,9 @@ import jwt from 'jsonwebtoken';
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    const usernameCandidate = String(email || '').includes('@')
+      ? String(email).split('@')[0]
+      : String(email || '');
 
     if (!email || !password) {
       return res
@@ -24,14 +27,27 @@ export const login = async (req, res) => {
         email,
       ]);
       users = rows;
+
+      if (users.length === 0 && usernameCandidate) {
+        const [usernameRows] = await db.query(
+          'SELECT * FROM users WHERE username = ?',
+          [usernameCandidate],
+        );
+        users = usernameRows;
+      }
     } catch (queryError) {
       if (queryError?.code === 'ER_BAD_FIELD_ERROR') {
         // Fallback for legacy DB schema: login value may be stored as username
         const [rows] = await db.query(
           'SELECT * FROM users WHERE username = ?',
-          [email],
+          [usernameCandidate || email],
         );
         users = rows;
+      } else if (queryError?.code === 'ER_NO_SUCH_TABLE') {
+        console.error(
+          'Users table not found. Database schema is not initialized.',
+        );
+        return res.status(503).json({ message: 'Database not initialized' });
       } else {
         throw queryError;
       }
@@ -92,6 +108,15 @@ export const login = async (req, res) => {
     });
   } catch (error) {
     console.error('Error during login:', error);
+
+    if (
+      error?.code === 'ECONNREFUSED' ||
+      error?.code === 'ETIMEDOUT' ||
+      error?.code === 'PROTOCOL_CONNECTION_LOST'
+    ) {
+      return res.status(503).json({ message: 'Database unavailable' });
+    }
+
     res.status(500).json({ message: 'Server error' });
   }
 };
