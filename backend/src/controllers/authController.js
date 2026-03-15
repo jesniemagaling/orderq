@@ -7,7 +7,9 @@ export const login = async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
+      return res
+        .status(400)
+        .json({ message: 'Email and password are required' });
     }
 
     if (!db || typeof db.query !== 'function') {
@@ -18,12 +20,17 @@ export const login = async (req, res) => {
     // Check if user exists (supports older schemas that may not have `email` column)
     let users = [];
     try {
-      const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+      const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [
+        email,
+      ]);
       users = rows;
     } catch (queryError) {
       if (queryError?.code === 'ER_BAD_FIELD_ERROR') {
         // Fallback for legacy DB schema: login value may be stored as username
-        const [rows] = await db.query('SELECT * FROM users WHERE username = ?', [email]);
+        const [rows] = await db.query(
+          'SELECT * FROM users WHERE username = ?',
+          [email],
+        );
         users = rows;
       } else {
         throw queryError;
