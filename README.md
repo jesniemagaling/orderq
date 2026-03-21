@@ -47,47 +47,29 @@ The repository contains three coordinated apps:
 
 ### Customer App
 
-#### Home
+<p align="left">
+	<img src="docs/images/customer-app/home.jpg" alt="Customer app home" width="32%" />
+	<img src="docs/images/customer-app/search.jpg" alt="Customer app search" width="32%" />
+	<img src="docs/images/customer-app/menu.jpg" alt="Customer app menu" width="32%" />
+</p>
 
-<img src="docs/images/customer-app/home.jpg" alt="Customer app home" width="100%" style="max-width: 420px;" />
+<p align="left">
+	<img src="docs/images/customer-app/food_details.jpg" alt="Customer app food details" width="32%" />
+	<img src="docs/images/customer-app/cart.jpg" alt="Customer app cart" width="32%" />
+	<img src="docs/images/customer-app/payment_method.jpg" alt="Customer app payment method" width="32%" />
+</p>
 
-#### Search
+<p align="left">
+	<img src="docs/images/customer-app/orders.jpg" alt="Customer app order history" width="32%" />
+	<img src="docs/images/customer-app/orders_canceled.jpg" alt="Customer app canceled order history" width="32%" />
+	<img src="docs/images/customer-app/status_pending.jpg" alt="Customer app order status pending" width="32%" />
+</p>
 
-<img src="docs/images/customer-app/search.jpg" alt="Customer app search" width="100%" style="max-width: 420px;" />
-
-#### Menu
-
-<img src="docs/images/customer-app/menu.jpg" alt="Customer app menu" width="100%" style="max-width: 420px;" />
-
-#### Food Details
-
-<img src="docs/images/customer-app/food_details.jpg" alt="Customer app food details" width="100%" style="max-width: 420px;" />
-
-#### Cart
-
-<img src="docs/images/customer-app/cart.jpg" alt="Customer app cart" width="100%" style="max-width: 420px;" />
-
-#### Payment Method
-
-<img src="docs/images/customer-app/payment_method.jpg" alt="Customer app payment method" width="100%" style="max-width: 420px;" />
-
-#### Order History
-
-<img src="docs/images/customer-app/orders.jpg" alt="Customer app order history" width="100%" style="max-width: 420px;" />
-<br />
-<img src="docs/images/customer-app/orders_canceled.jpg" alt="Customer app canceled order history" width="100%" style="max-width: 420px;" />
-
-#### Order Status Tracking
-
-<img src="docs/images/customer-app/status_pending.jpg" alt="Customer app order status pending" width="100%" style="max-width: 420px;" />
-<br />
-<img src="docs/images/customer-app/status_confirmed.jpg" alt="Customer app order status confirmed" width="100%" style="max-width: 420px;" />
-<br />
-<img src="docs/images/customer-app/status_served.jpg" alt="Customer app order status served" width="100%" style="max-width: 420px;" />
-
-#### Digital Receipt
-
-<img src="docs/images/customer-app/digital_receipt.jpg" alt="Customer app digital receipt" width="100%" style="max-width: 420px;" />
+<p align="left">
+	<img src="docs/images/customer-app/status_confirmed.jpg" alt="Customer app order status confirmed" width="32%" />
+	<img src="docs/images/customer-app/status_served.jpg" alt="Customer app order status served" width="32%" />
+	<img src="docs/images/customer-app/digital_receipt.jpg" alt="Customer app digital receipt" width="32%" />
+</p>
 
 ### Admin Dashboard
 
