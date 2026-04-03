@@ -21,6 +21,7 @@ export default function Cart() {
     removeFromCart,
     increaseQuantity,
     decreaseQuantity,
+    setQuantity,
     totalPrice,
   } = useCart();
 
@@ -42,6 +43,10 @@ export default function Cart() {
     toast.error(`${item.name} removed from cart`, { autoClose: 1500 });
   };
 
+  const handleSetQuantity = (item: MenuItem, quantity: number) => {
+    setQuantity(item, quantity);
+  };
+
   return (
     <>
       <Nav title="Your Cart" />
@@ -53,7 +58,7 @@ export default function Cart() {
             {cart.map((item, index) => {
               const baseImageUrl = import.meta.env.VITE_API_URL.replace(
                 '/api',
-                ''
+                '',
               );
               const cleanPath = (item.image_url || '')
                 .replace('/api', '')
@@ -74,6 +79,7 @@ export default function Cart() {
                     quantity={item.quantity}
                     onIncrease={() => handleIncrease(item)}
                     onDecrease={() => handleDecrease(item)}
+                    onSetQuantity={(_, qty) => handleSetQuantity(item, qty)}
                     onRemove={() => handleRemove(item)}
                   />
                 </div>
@@ -105,7 +111,7 @@ export default function Cart() {
 
                   if (!sessionToken) {
                     toast.error(
-                      'Session expired. Please scan the QR code again.'
+                      'Session expired. Please scan the QR code again.',
                     );
                     navigate('/session-expired');
                     return;
@@ -115,7 +121,7 @@ export default function Cart() {
                   localStorage.setItem('sessionToken', sessionToken);
 
                   navigate(
-                    `/payment-method?table=${table}&token=${sessionToken}`
+                    `/payment-method?table=${table}&token=${sessionToken}`,
                   );
                 }}
               >

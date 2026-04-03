@@ -3,6 +3,7 @@ type PromotionCardProps = {
   highlight: string;
   subtitle: string;
   image: string;
+  onClick?: () => void;
 };
 
 export default function PromotionCard({
@@ -10,9 +11,14 @@ export default function PromotionCard({
   highlight,
   subtitle,
   image,
+  onClick,
 }: PromotionCardProps) {
   return (
-    <div className="flex items-center max-w-[380px] gap-3 justify-between rounded-2xl bg-gradient-to-r from-[rgba(130,13,23,0.9)] to-[rgba(183,30,43,1)] p-4 text-white shadow-lg">
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center max-w-[380px] gap-3 justify-between rounded-2xl bg-gradient-to-r from-[rgba(130,13,23,0.9)] to-[rgba(183,30,43,1)] p-4 text-white shadow-lg text-left transition hover:scale-[1.01] active:scale-[0.99]"
+    >
       <div className="ml-2">
         <p className="font-normal heading-3 opacity-90">{title}</p>
         <h3 className="font-semibold sm:text-lg tex-base">{highlight}</h3>
@@ -26,6 +32,6 @@ export default function PromotionCard({
           className="object-cover w-full h-full rounded-2xl"
         />
       </div>
-    </div>
+    </button>
   );
 }

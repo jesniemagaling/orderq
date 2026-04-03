@@ -5,8 +5,19 @@ export default function CartItem({
   quantity,
   onIncrease,
   onDecrease,
+  onSetQuantity,
   onRemove,
 }: CartItemProps) {
+  const clampQuantity = (value: number) => Math.max(1, Math.min(99, value));
+  const handleInputChange = (rawValue: string) => {
+    const numeric = rawValue.replace(/\D/g, '');
+    if (!numeric) {
+      onSetQuantity(item.id, 1);
+      return;
+    }
+    onSetQuantity(item.id, clampQuantity(Number.parseInt(numeric, 10)));
+  };
+
   return (
     <div className="flex items-center justify-between py-2">
       <div className="flex items-center gap-5">
@@ -37,25 +48,38 @@ export default function CartItem({
         >
           Remove
         </button>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 rounded-xl bg-gray-50 px-2 py-1 border border-gray-100 shadow-sm">
           <button
             onClick={(e) => {
               e.stopPropagation();
               onDecrease(item.id);
             }}
-            className="text-lg text-primary-500 hover:opacity-70"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-primary-500 hover:bg-white transition"
           >
             <Minus size={18} />
           </button>
-          <span className="w-4 text-lg font-semibold text-center">
-            {quantity}
-          </span>
+          <input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={quantity}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => {
+              e.stopPropagation();
+              handleInputChange(e.target.value);
+            }}
+            onBlur={(e) => {
+              e.stopPropagation();
+              handleInputChange(e.target.value);
+            }}
+            className="w-14 h-8 px-1 text-sm font-semibold text-center rounded-lg bg-white border border-gray-200 focus:outline-none focus:border-red-400 focus:ring-2 focus:ring-red-200"
+          />
           <button
             onClick={(e) => {
               e.stopPropagation();
               onIncrease(item.id);
             }}
-            className="text-lg text-primary-500 hover:opacity-70"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-primary-500 hover:bg-white transition"
           >
             <Plus size={18} />
           </button>

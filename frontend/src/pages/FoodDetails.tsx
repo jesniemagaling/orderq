@@ -22,8 +22,17 @@ export default function FoodDetails() {
   const query = searchParams.toString() ? `?${searchParams.toString()}` : '';
   const navigate = useNavigate();
 
+  const clampQuantity = (value: number) => Math.max(1, Math.min(99, value));
   const handleIncrease = () => setQuantity((q) => Math.min(q + 1, 99));
   const handleDecrease = () => setQuantity((q) => Math.max(1, q - 1));
+  const handleQuantityChange = (value: string) => {
+    const numeric = value.replace(/\D/g, '');
+    if (!numeric) {
+      setQuantity(1);
+      return;
+    }
+    setQuantity(clampQuantity(Number.parseInt(numeric, 10)));
+  };
 
   const baseUrl = import.meta.env.VITE_API_URL || '';
 
@@ -191,9 +200,17 @@ export default function FoodDetails() {
                   <Minus className="w-4 h-4" />
                 </button>
 
-                {/* SOFTER center box */}
-                <div className="flex-1 py-3 text-center bg-gray-50 rounded-xl">
-                  <span className="text-xl font-bold">{quantity}</span>
+                {/* Quantity input */}
+                <div className="flex-1 bg-gray-50 rounded-xl">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={quantity}
+                    onChange={(e) => handleQuantityChange(e.target.value)}
+                    onBlur={(e) => handleQuantityChange(e.target.value)}
+                    className="w-full py-3 text-xl font-bold text-center bg-transparent rounded-xl border border-transparent focus:border-red-400 focus:ring-2 focus:ring-red-200 focus:outline-none"
+                  />
                 </div>
 
                 <button

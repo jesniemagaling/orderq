@@ -5,6 +5,7 @@ import BackButton from '@/components/BackButton';
 import api from '@/lib/axios';
 import { useSessionGuard } from '@/hooks/useSessionGuard';
 import type { Order } from '@/types/order';
+import { toast } from 'react-toastify';
 
 export default function Receipt() {
   const storeInfo = {
@@ -17,10 +18,15 @@ export default function Receipt() {
   const { orderId } = useParams();
   const [searchParams] = useSearchParams();
   const sessionToken = searchParams.get('token');
+  const table = searchParams.get('table');
 
   const [order, setOrder] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState('');
+  const [sendingFeedback, setSendingFeedback] = useState(false);
+  const [feedbackSent, setFeedbackSent] = useState(false);
 
   useSessionGuard();
 
@@ -31,10 +37,10 @@ export default function Receipt() {
       try {
         setLoading(true);
         const res = await api.get<Order[]>(
-          `/orders/by-session?token=${sessionToken}`
+          `/orders/by-session?token=${sessionToken}`,
         );
         const foundOrder = res.data.find(
-          (o: any) => o.id.toString() === orderId
+          (o: any) => o.id.toString() === orderId,
         );
 
         if (!foundOrder) {
@@ -63,8 +69,34 @@ export default function Receipt() {
   if (error) return <p className="mt-6 text-center text-red-500">{error}</p>;
   if (!order) return <p className="mt-6 text-center">Receipt not found.</p>;
 
-  const tax = order.total_amount * 0.1;
-  const totalWithTax = order.total_amount + tax;
+  const subtotal = Number(order.subtotal_amount ?? order.total_amount ?? 0);
+  const discount = Number(order.discount_amount ?? 0);
+  const tax = Number(order.tax_amount ?? 0);
+  const totalWithTax = Number(order.total_amount ?? 0);
+
+  const submitFeedback = async () => {
+    try {
+      setSendingFeedback(true);
+      await api.post('/feedback', {
+        session_token: sessionToken,
+        order_id: Number(orderId),
+        rating,
+        comment,
+      });
+      setComment('');
+      setFeedbackSent(true);
+      toast.success('Thanks for your feedback!');
+    } catch (err) {
+      toast.error('Failed to submit feedback. Please try again.');
+    } finally {
+      setSendingFeedback(false);
+    }
+  };
+
+  const menuQuery = new URLSearchParams();
+  if (table) menuQuery.set('table', table);
+  if (sessionToken) menuQuery.set('token', sessionToken);
+  const backToMenuPath = `/menu${menuQuery.toString() ? `?${menuQuery.toString()}` : ''}`;
 
   return (
     <>
@@ -85,8 +117,18 @@ export default function Receipt() {
             ))}
           </div>
 
+          <div className="flex justify-between mb-1">
+            <span>Subtotal</span>
+            <span>₱{subtotal.toFixed(2)}</span>
+          </div>
+
+          <div className="flex justify-between mb-1">
+            <span>Discount</span>
+            <span>-₱{discount.toFixed(2)}</span>
+          </div>
+
           <div className="flex justify-between mb-4">
-            <span>Tax (10%)</span>
+            <span>Tax</span>
             <span>₱{tax.toFixed(2)}</span>
           </div>
 
@@ -113,7 +155,57 @@ export default function Receipt() {
           </div>
         </div>
 
-        <Link to="/menu">
+        <div className="w-[320px] rounded-2xl border border-gray-100 p-5 bg-white shadow-sm">
+          <h2 className="text-base font-semibold text-gray-900">
+            Rate your experience
+          </h2>
+          <p className="mt-1 mb-4 text-xs text-gray-500">
+            Your feedback helps us improve your next order.
+          </p>
+
+          <div className="flex items-center gap-2 mb-3">
+            <label className="text-xs font-semibold tracking-wide text-gray-600 uppercase">
+              Rating
+            </label>
+            <select
+              value={rating}
+              onChange={(e) => setRating(Number(e.target.value))}
+              className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-red-200"
+            >
+              {[5, 4, 3, 2, 1].map((v) => (
+                <option key={v} value={v}>
+                  {v} Star{v > 1 ? 's' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+          <textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="Tell us how we can improve (optional)"
+            className="w-full h-24 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-200"
+          />
+
+          {feedbackSent && (
+            <p className="mt-3 text-xs font-medium text-green-600">
+              Feedback submitted successfully.
+            </p>
+          )}
+
+          <Button
+            onClick={submitFeedback}
+            disabled={sendingFeedback || feedbackSent}
+            className="w-full mt-3"
+          >
+            {sendingFeedback
+              ? 'Submitting...'
+              : feedbackSent
+                ? 'Feedback Sent'
+                : 'Submit Feedback'}
+          </Button>
+        </div>
+
+        <Link to={backToMenuPath}>
           <Button variant="link">Back to Menu</Button>
         </Link>
       </div>

@@ -18,6 +18,11 @@ interface Order {
   payment_status: string;
   payment_method: string;
   total_amount: number;
+  subtotal_amount?: number;
+  discount_amount?: number;
+  tax_amount?: number;
+  waiting_minutes?: number;
+  estimated_ready_at?: string;
   created_at: string;
   table_number: string;
   items: OrderItem[];
@@ -36,7 +41,7 @@ export default function Orders() {
     const fetchOrders = async () => {
       try {
         const res = await api.get<Order[]>(
-          `/orders/by-session?token=${sessionToken}`
+          `/orders/by-session?token=${sessionToken}`,
         );
         setOrders(res.data);
       } catch (err) {
@@ -60,8 +65,10 @@ export default function Orders() {
       <div className="flex flex-col mt-6 mb-6 space-y-10">
         {orders.map((order, idx) => {
           const totalAmount = Number(order.total_amount);
-          const tax = totalAmount * 0.1;
-          const total = totalAmount + tax;
+          const subtotal = Number(order.subtotal_amount ?? totalAmount);
+          const discount = Number(order.discount_amount ?? 0);
+          const tax = Number(order.tax_amount ?? 0);
+          const total = totalAmount;
 
           const orderDate = new Date(order.created_at).toLocaleDateString(
             'en-US',
@@ -71,7 +78,7 @@ export default function Orders() {
               day: 'numeric',
               hour: 'numeric',
               minute: 'numeric',
-            }
+            },
           );
 
           return (
@@ -80,6 +87,23 @@ export default function Orders() {
                 {orderDate}{' '}
                 <span className="text-black">&nbsp;&nbsp;|&nbsp;&nbsp;</span>
                 Table#: <span className="text-black">{order.table_number}</span>
+                {order.estimated_ready_at && (
+                  <>
+                    <span className="text-black">
+                      &nbsp;&nbsp;|&nbsp;&nbsp;
+                    </span>
+                    ETA:{' '}
+                    <span className="text-black">
+                      {new Date(order.estimated_ready_at).toLocaleTimeString(
+                        [],
+                        {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        },
+                      )}
+                    </span>
+                  </>
+                )}
               </p>
 
               <div className="px-2 flex-1 max-w-[560px]">
@@ -101,7 +125,21 @@ export default function Orders() {
                 ))}
 
                 <div className="grid grid-cols-[2fr_1fr_1fr] py-1 text-sm sm:text-base border-b border-gray-100 text-gray-600">
-                  <span>Tax 10%</span>
+                  <span>Subtotal</span>
+                  <span className="text-center">-</span>
+                  <span className="text-right">₱{subtotal.toFixed(2)}</span>
+                </div>
+
+                <div className="grid grid-cols-[2fr_1fr_1fr] py-1 text-sm sm:text-base border-b border-gray-100 text-gray-600">
+                  <span>Discount</span>
+                  <span className="text-center">-</span>
+                  <span className="text-right text-green-600">
+                    -₱{discount.toFixed(2)}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-[2fr_1fr_1fr] py-1 text-sm sm:text-base border-b border-gray-100 text-gray-600">
+                  <span>Tax</span>
                   <span className="text-center">-</span>
                   <span className="text-right">₱{tax.toFixed(2)}</span>
                 </div>

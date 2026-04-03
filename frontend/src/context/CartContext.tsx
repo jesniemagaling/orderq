@@ -20,6 +20,7 @@ type CartContextType = {
   removeFromCart: (item: MenuItem) => void;
   increaseQuantity: (item: MenuItem) => void;
   decreaseQuantity: (item: MenuItem) => void;
+  setQuantity: (item: MenuItem, quantity: number) => void;
   checkout: () => void;
   totalPrice: number;
   clearCart: () => void;
@@ -75,7 +76,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       const exists = prev.find((i) => i.id === item.id);
       if (exists)
         return prev.map((i) =>
-          i.id === item.id ? { ...i, quantity: i.quantity + quantity } : i
+          i.id === item.id ? { ...i, quantity: i.quantity + quantity } : i,
         );
       return [...prev, { ...item, quantity }];
     });
@@ -86,15 +87,21 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
   const increaseQuantity = (item: MenuItem) =>
     setCart((prev) =>
       prev.map((i) =>
-        i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
-      )
+        i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i,
+      ),
     );
   const decreaseQuantity = (item: MenuItem) =>
     setCart((prev) =>
       prev
         .map((i) => (i.id === item.id ? { ...i, quantity: i.quantity - 1 } : i))
-        .filter((i) => i.quantity > 0)
+        .filter((i) => i.quantity > 0),
     );
+  const setQuantity = (item: MenuItem, quantity: number) => {
+    const nextQty = Math.max(1, Math.min(99, Number(quantity) || 1));
+    setCart((prev) =>
+      prev.map((i) => (i.id === item.id ? { ...i, quantity: nextQty } : i)),
+    );
+  };
   const clearCart = () => setCart([]);
   const checkout = () => {
     if (!cart.length) return;
@@ -110,7 +117,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const totalPrice = cart.reduce(
     (sum, item) => sum + item.price * item.quantity,
-    0
+    0,
   );
 
   const setTableWithSession = async (tableId: number) => {
@@ -122,6 +129,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
     } catch (error: any) {
       console.error('Error creating session:', error);
       toast.error('Failed to create/reuse session for table.');
+      throw error;
     }
   };
 
@@ -134,6 +142,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
         removeFromCart,
         increaseQuantity,
         decreaseQuantity,
+        setQuantity,
         totalPrice,
         cartCount,
         checkout,

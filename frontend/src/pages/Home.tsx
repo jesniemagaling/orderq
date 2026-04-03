@@ -10,6 +10,15 @@ import api from '@/lib/axios';
 import { toast } from 'react-toastify';
 import { MenuItem } from '@/types/menu';
 
+interface Promotion {
+  id: string;
+  code?: string;
+  title: string;
+  highlight: string;
+  subtitle: string;
+  image: string;
+}
+
 interface TopItemResponse {
   name: string;
   total_sold: string;
@@ -22,6 +31,7 @@ export default function Home() {
   const [topItems, setTopItems] = useState<MenuItem[]>([]);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const typedPromotions = promotions as Promotion[];
 
   const table = searchParams.get('table');
   if (!table) console.error('Table number missing in URL!');
@@ -55,6 +65,16 @@ export default function Home() {
     navigate(`/menu${query}`);
   };
 
+  const handlePromotionClick = (promo: Promotion) => {
+    if (promo.code) {
+      localStorage.setItem('activePromoCode', promo.code);
+      toast.success(`${promo.highlight} applied. Promo code: ${promo.code}`);
+    }
+
+    if (!table) return;
+    navigate(`/menu?table=${table}`);
+  };
+
   return (
     <>
       <header>
@@ -73,13 +93,14 @@ export default function Home() {
       <section>
         <h2 className="my-6 heading-2">Promotions</h2>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          {promotions.map((promo) => (
+          {typedPromotions.map((promo) => (
             <PromotionCard
               key={promo.id}
               title={promo.title}
               highlight={promo.highlight}
               subtitle={promo.subtitle}
               image={promo.image}
+              onClick={() => handlePromotionClick(promo)}
             />
           ))}
         </div>

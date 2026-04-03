@@ -48,6 +48,12 @@ declare global {
 
 export default function PaymentPage() {
   const [selectedMethod, setSelectedMethod] = useState('cash');
+  const [discountType, setDiscountType] = useState<'none' | 'pwd' | 'senior'>(
+    'none',
+  );
+  const [promoCode, setPromoCode] = useState('');
+  const [promoDiscount, setPromoDiscount] = useState(0);
+  const [isApplyingPromo, setIsApplyingPromo] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const {
@@ -77,15 +83,52 @@ export default function PaymentPage() {
       .catch((error: any) => {
         console.error('BACKEND ERROR:', error?.response?.data);
         toast.error(
-          error?.response?.data?.message || 'Failed to create session.'
+          error?.response?.data?.message || 'Failed to create session.',
         );
         navigate('/');
       })
       .finally(() => setLoadingSession(false));
   }, [qrTableNumber, table, sessionToken]);
 
-  const tax = totalPrice * 0.1;
-  const total = totalPrice + tax;
+  useEffect(() => {
+    const storedPromo = localStorage.getItem('activePromoCode');
+    if (storedPromo && !promoCode) setPromoCode(storedPromo);
+  }, [promoCode]);
+
+  const discountRate = discountType === 'none' ? 0 : 0.2;
+  const baseDiscount = totalPrice * discountRate;
+  const subtotalAfterDiscounts = Math.max(
+    totalPrice - baseDiscount - promoDiscount,
+    0,
+  );
+  const tax = subtotalAfterDiscounts * 0.1;
+  const total = subtotalAfterDiscounts + tax;
+
+  const applyPromo = async () => {
+    const code = promoCode.trim().toUpperCase();
+    if (!code) {
+      toast.error('Enter a promo code first.');
+      return;
+    }
+
+    try {
+      setIsApplyingPromo(true);
+      const res = await api.post('/promotions/validate', {
+        code,
+        subtotal: totalPrice,
+      });
+      const discount = Number(res.data?.discountAmount || 0);
+      setPromoDiscount(discount);
+      setPromoCode(code);
+      localStorage.setItem('activePromoCode', code);
+      toast.success(`Promo applied: -₱${discount.toFixed(2)}`);
+    } catch (error: any) {
+      setPromoDiscount(0);
+      toast.error(error?.response?.data?.message || 'Invalid promo code');
+    } finally {
+      setIsApplyingPromo(false);
+    }
+  };
 
   // PayPal integration
   useEffect(() => {
@@ -119,6 +162,8 @@ export default function PaymentPage() {
             payment_method: 'paypal',
             paypal_order_id: details.id,
             payment_reference: details.id,
+            discount_type: discountType,
+            promo_code: promoDiscount > 0 ? promoCode : null,
           });
 
           toast.success('Payment completed via PayPal!');
@@ -161,6 +206,8 @@ export default function PaymentPage() {
         })),
         payment_method: selectedMethod,
         payment_status,
+        discount_type: discountType,
+        promo_code: promoDiscount > 0 ? promoCode : null,
       });
 
       toast.success('Order created successfully!');
@@ -196,7 +243,7 @@ export default function PaymentPage() {
               <Card
                 className={cn(
                   'flex items-center justify-between p-2 rounded-lg transition hover:bg-gray-50 border-none shadow-none',
-                  selectedMethod === method.id && 'border border-primary-500'
+                  selectedMethod === method.id && 'border border-primary-500',
                 )}
               >
                 <div className="flex">{method.icon}</div>
@@ -216,6 +263,44 @@ export default function PaymentPage() {
 
       <div className="space-y-3 text-gray-500">
         <h2 className="pb-1 text-xl font-medium text-black border-b-2 max-w-fit border-primary-500">
+          Discounts & Promo
+        </h2>
+
+        <div className="flex items-center justify-between gap-2">
+          <label className="text-sm text-gray-600">Discount Type</label>
+          <select
+            value={discountType}
+            onChange={(e) => setDiscountType(e.target.value as any)}
+            className="px-3 py-2 text-sm border rounded-md"
+          >
+            <option value="none">None</option>
+            <option value="pwd">PWD (20%)</option>
+            <option value="senior">Senior Citizen (20%)</option>
+          </select>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <input
+            value={promoCode}
+            onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+            placeholder="Promo code"
+            className="flex-1 px-3 py-2 text-sm border rounded-md focus:border-red-400 focus:ring-2 focus:ring-red-200 focus:outline-none"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            onClick={applyPromo}
+            disabled={isApplyingPromo}
+          >
+            {isApplyingPromo ? 'Applying...' : 'Apply'}
+          </Button>
+        </div>
+      </div>
+
+      <Separator />
+
+      <div className="space-y-3 text-gray-500">
+        <h2 className="pb-1 text-xl font-medium text-black border-b-2 max-w-fit border-primary-500">
           Order Details
         </h2>
         <div className="flex justify-between">
@@ -223,6 +308,15 @@ export default function PaymentPage() {
           <span className="font-bold">
             ₱
             {totalPrice.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span>Discount</span>
+          <span className="font-bold text-green-600">
+            -₱
+            {(baseDiscount + promoDiscount).toLocaleString(undefined, {
+              maximumFractionDigits: 2,
+            })}
           </span>
         </div>
         <div className="flex justify-between">

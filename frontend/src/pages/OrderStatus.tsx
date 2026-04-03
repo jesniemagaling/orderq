@@ -34,6 +34,11 @@ type Order = {
   payment_status: string;
   payment_method: string;
   total_amount: number;
+  subtotal_amount?: number;
+  discount_amount?: number;
+  tax_amount?: number;
+  waiting_minutes?: number;
+  estimated_ready_at?: string;
   items: OrderItem[];
 };
 
@@ -44,6 +49,7 @@ export default function TrackOrder() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isCancelling, setIsCancelling] = useState(false);
+  const [remainingMs, setRemainingMs] = useState<number | null>(null);
 
   const [searchParams] = useSearchParams();
   const sessionToken = searchParams.get('token');
@@ -59,7 +65,7 @@ export default function TrackOrder() {
       try {
         setLoading(true);
         const res = await api.get<Order[]>(
-          `/orders/by-session?token=${sessionToken}`
+          `/orders/by-session?token=${sessionToken}`,
         );
         const foundOrder = res.data.find((o) => o.id.toString() === orderId);
 
@@ -88,6 +94,22 @@ export default function TrackOrder() {
   useEffect(() => {
     if (!orderId) return;
 
+    const playStatusSound = () => {
+      const audioCtx = new window.AudioContext();
+      const osc = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 880;
+      gainNode.gain.value = 0.06;
+      osc.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      osc.start();
+      setTimeout(() => {
+        osc.stop();
+        audioCtx.close();
+      }, 180);
+    };
+
     const handleTableStatusUpdate = (data: any) => {
       const updates = Array.isArray(data) ? data : [data];
 
@@ -106,6 +128,7 @@ export default function TrackOrder() {
 
         if (update.status === 'unserved' && prev.status === 'pending') {
           toast.warning('Your order has been confirmed by the cashier.');
+          playStatusSound();
         }
 
         return {
@@ -115,12 +138,52 @@ export default function TrackOrder() {
       });
     };
 
+    const handleOrderEstimateUpdated = (data: any) => {
+      setOrder((prev) => {
+        if (!prev) return prev;
+        if (Number(prev.id) !== Number(data?.id)) return prev;
+
+        return {
+          ...prev,
+          waiting_minutes: Number(
+            data?.waiting_minutes ?? prev.waiting_minutes,
+          ),
+          estimated_ready_at:
+            data?.estimated_ready_at ?? prev.estimated_ready_at,
+          status: data?.status ?? prev.status,
+        };
+      });
+    };
+
     socket.on('tableStatusUpdate', handleTableStatusUpdate);
+    socket.on('orderEstimateUpdated', handleOrderEstimateUpdated);
 
     return () => {
       socket.off('tableStatusUpdate', handleTableStatusUpdate);
+      socket.off('orderEstimateUpdated', handleOrderEstimateUpdated);
     };
   }, [orderId]);
+
+  useEffect(() => {
+    const isActiveOrder = ['pending', 'unserved', 'in_progress'].includes(
+      String(order?.status || ''),
+    );
+
+    if (!order?.estimated_ready_at || !isActiveOrder) {
+      setRemainingMs(null);
+      return;
+    }
+
+    const update = () => {
+      const diff =
+        new Date(order.estimated_ready_at as string).getTime() - Date.now();
+      setRemainingMs(Math.max(diff, 0));
+    };
+
+    update();
+    const timer = setInterval(update, 1000);
+    return () => clearInterval(timer);
+  }, [order?.estimated_ready_at, order?.status]);
 
   // COMPUTE STEP dynamically whenever order status changes
   const currentStep = useMemo(() => {
@@ -154,7 +217,7 @@ export default function TrackOrder() {
     if (!order) return;
 
     const confirmCancel = window.confirm(
-      'Are you sure you want to cancel this order?'
+      'Are you sure you want to cancel this order?',
     );
     if (!confirmCancel) return;
 
@@ -188,6 +251,16 @@ export default function TrackOrder() {
 
         <div className="flex flex-col items-center space-y-6 bg-white">
           <h1 className="heading-2">TRACK YOUR ORDER</h1>
+
+          {remainingMs !== null && (
+            <p className="text-sm text-gray-600">
+              Estimated waiting time:{' '}
+              <span className="font-semibold text-primary-500">
+                {Math.floor(remainingMs / 60000)}m{' '}
+                {Math.floor((remainingMs % 60000) / 1000)}s
+              </span>
+            </p>
+          )}
 
           <div className="flex flex-col">
             {statusSteps.map((step, index) => (
