@@ -2,6 +2,8 @@ import { useEffect, useState, useMemo } from 'react';
 import { adminSocket } from '../lib/socket';
 import api from '../lib/axios';
 import Button from '../components/ui/Button';
+import { playNotificationSound } from '../lib/sound';
+import AutoRefreshSelect from '../components/ui/AutoRefreshSelect';
 
 interface OrderItem {
   name: string;
@@ -14,6 +16,8 @@ interface Order {
   total_amount: number;
   status: string;
   created_at: string;
+  waiting_minutes?: number;
+  estimated_ready_at?: string | null;
   items: OrderItem[];
   table_id: number;
   table_number: string;
@@ -32,6 +36,7 @@ export default function KitchenOrders() {
   const [tableOrders, setTableOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [tablesWithNotif, setTablesWithNotif] = useState<number[]>([]);
+  const [refreshRate, setRefreshRate] = useState(30);
 
   // Fetch all tables (including available)
   const fetchTables = async () => {
@@ -63,11 +68,11 @@ export default function KitchenOrders() {
 
       const filtered = data.filter(
         (order: Order) =>
-          order.status === 'unserved' || order.status === 'served'
+          order.status === 'unserved' || order.status === 'served',
       );
 
       const sorted = filtered.sort((a: Order, b: Order) =>
-        a.created_at.localeCompare(b.created_at)
+        a.created_at.localeCompare(b.created_at),
       );
 
       setTableOrders(sorted);
@@ -86,9 +91,10 @@ export default function KitchenOrders() {
 
     adminSocket.on('newOrder', async ({ tableId, confirmed }) => {
       if (!confirmed) return;
+      playNotificationSound();
 
       setTablesWithNotif((prev) =>
-        prev.includes(tableId) ? prev : [...prev, tableId]
+        prev.includes(tableId) ? prev : [...prev, tableId],
       );
 
       await fetchOrders();
@@ -115,10 +121,43 @@ export default function KitchenOrders() {
     };
   }, [selectedTableId]);
 
+  useEffect(() => {
+    if (!refreshRate) return;
+    const id = window.setInterval(async () => {
+      await fetchTables();
+      await fetchOrders();
+      if (selectedTableId) await fetchOrdersForTable(selectedTableId);
+    }, refreshRate * 1000);
+
+    return () => window.clearInterval(id);
+  }, [refreshRate, selectedTableId]);
+
   const handleTableClick = (tableId: number) => {
     setSelectedTableId(tableId);
     fetchOrdersForTable(tableId);
     setTablesWithNotif((prev) => prev.filter((id) => id !== tableId));
+  };
+
+  const formatRemaining = (estimatedReadyAt?: string | null) => {
+    if (!estimatedReadyAt) return '—';
+    const diff = new Date(estimatedReadyAt).getTime() - Date.now();
+    if (diff <= 0) return 'Ready now';
+    const totalSeconds = Math.floor(diff / 1000);
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    return `${mins}m ${secs}s`;
+  };
+
+  const handleExtendEstimate = async (orderId: number, minutes: number) => {
+    try {
+      await api.put(`/orders/${orderId}/estimate`, { add_minutes: minutes });
+      if (selectedTableId) {
+        await fetchOrdersForTable(selectedTableId);
+      }
+      await fetchOrders();
+    } catch (err) {
+      console.error('Failed to extend estimate:', err);
+    }
   };
 
   // Mark table orders as done (served)
@@ -161,7 +200,10 @@ export default function KitchenOrders() {
     <div className="flex gap-10">
       {/* Tables List */}
       <div className="w-1/2">
-        <h1 className="mb-6 text-3xl font-bold">All Tables</h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold">All Tables</h1>
+          <AutoRefreshSelect value={refreshRate} onChange={setRefreshRate} />
+        </div>
 
         {combinedTables.length === 0 ? (
           <p className="text-gray-500">No tables found.</p>
@@ -185,10 +227,10 @@ export default function KitchenOrders() {
                     selectedTableId === table.id
                       ? 'text-white'
                       : table.status === 'available'
-                      ? 'text-green-500'
-                      : table.hasUnserved
-                      ? 'text-red-600'
-                      : 'text-blue-400'
+                        ? 'text-green-500'
+                        : table.hasUnserved
+                          ? 'text-red-600'
+                          : 'text-blue-400'
                   }`}
                 >
                   {table.status
@@ -237,14 +279,36 @@ export default function KitchenOrders() {
                         </span>
                       </h3>
 
-                      {order.status === 'unserved' && (
-                        <Button
-                          className="bg-[#820D17] text-white text-sm px-4 py-2"
-                          onClick={() => handleMarkAsDone(order.table_id)}
-                        >
-                          Done
-                        </Button>
+                      {['pending', 'unserved', 'in_progress'].includes(
+                        order.status,
+                      ) && (
+                        <div className="flex items-center gap-2">
+                          <Button
+                            className="px-2 py-2 text-sm text-white border-0 "
+                            onClick={() => handleExtendEstimate(order.id, 5)}
+                          >
+                            +5 min
+                          </Button>
+                          <Button
+                            className="bg-[#820D17] text-white text-sm px-4 py-2"
+                            onClick={() => handleMarkAsDone(order.table_id)}
+                          >
+                            Done
+                          </Button>
+                        </div>
                       )}
+                    </div>
+
+                    <div className="mb-3 text-xs text-gray-600">
+                      ETA:{' '}
+                      <span className="font-semibold">
+                        {formatRemaining(order.estimated_ready_at)}
+                      </span>
+                      {order.waiting_minutes ? (
+                        <span className="ml-2">
+                          ({order.waiting_minutes} min total)
+                        </span>
+                      ) : null}
                     </div>
 
                     <table className="w-full text-sm">

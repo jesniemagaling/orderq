@@ -5,6 +5,8 @@ import Modal from '../components/ui/Modal';
 import { debounce } from 'lodash';
 import { adminSocket as socket } from '../lib/socket';
 import { toast } from 'react-toastify';
+import { playNotificationSound } from '../lib/sound';
+import AutoRefreshSelect from '../components/ui/AutoRefreshSelect';
 
 interface OrderItem {
   name: string;
@@ -50,6 +52,7 @@ export default function Tables() {
   const [qrModalOpen, setQrModalOpen] = useState(false);
   const [qrPreview, setQrPreview] = useState<string | null>(null);
   const [qrTableNumber, setQrTableNumber] = useState<string | null>(null);
+  const [refreshRate, setRefreshRate] = useState(30);
 
   const debouncedFetchTableOrders = debounce((tableId: number) => {
     fetchTableOrders(tableId);
@@ -60,7 +63,7 @@ export default function Tables() {
     try {
       const res = await api.get<Table[]>('/tables');
       const sorted = res.data.sort(
-        (a, b) => Number(a.table_number) - Number(b.table_number)
+        (a, b) => Number(a.table_number) - Number(b.table_number),
       );
       setTables(sorted);
     } catch (err) {
@@ -94,11 +97,12 @@ export default function Tables() {
 
     socket.on('newOrder', (data: { tableId: number }) => {
       console.warn('Received new order for table:', data.tableId);
+      playNotificationSound();
 
       setTables((prev) =>
         prev.map((t) =>
-          t.id === data.tableId ? { ...t, has_additional_order: true } : t
-        )
+          t.id === data.tableId ? { ...t, has_additional_order: true } : t,
+        ),
       );
 
       // Optionally refresh if the same table is open
@@ -114,11 +118,11 @@ export default function Tables() {
       console.log('Table status updated:', tableId, status);
 
       setTables((prev) =>
-        prev.map((t) => (t.id === tableId ? { ...t, status } : t))
+        prev.map((t) => (t.id === tableId ? { ...t, status } : t)),
       );
 
       setSelectedTable((prev) =>
-        prev && prev.id === tableId ? { ...prev, status } : prev
+        prev && prev.id === tableId ? { ...prev, status } : prev,
       );
     });
 
@@ -131,6 +135,17 @@ export default function Tables() {
   }, []);
 
   useEffect(() => {
+    if (!refreshRate) return;
+    const id = window.setInterval(() => {
+      fetchTables();
+      fetchAllQR();
+      if (selectedTable?.id) fetchTableOrders(selectedTable.id);
+    }, refreshRate * 1000);
+
+    return () => window.clearInterval(id);
+  }, [refreshRate, selectedTable?.id]);
+
+  useEffect(() => {
     const handleOrderCancelled = (data: {
       tableId: number;
       orderId: number;
@@ -139,20 +154,22 @@ export default function Tables() {
 
       setTables((prev) =>
         prev.map((t) =>
-          t.id === data.tableId ? { ...t, has_canceled_order: true } : t
-        )
+          t.id === data.tableId ? { ...t, has_canceled_order: true } : t,
+        ),
       );
 
       if (selectedTable?.id === data.tableId) {
         setOrders((prev) =>
           prev.map((order) =>
-            order.id === data.orderId ? { ...order, status: 'canceled' } : order
-          )
+            order.id === data.orderId
+              ? { ...order, status: 'canceled' }
+              : order,
+          ),
         );
         setTables((prev) =>
           prev.map((t) =>
-            t.id === data.tableId ? { ...t, has_canceled_order: false } : t
-          )
+            t.id === data.tableId ? { ...t, has_canceled_order: false } : t,
+          ),
         );
       }
     };
@@ -170,7 +187,7 @@ export default function Tables() {
 
     try {
       const res = await api.get<TableDetailsResponse>(
-        `/tables/${tableId}/details`
+        `/tables/${tableId}/details`,
       );
       const data = res.data;
 
@@ -183,8 +200,8 @@ export default function Tables() {
                 has_additional_order: false,
                 sessionToken: data.session?.token,
               }
-            : t
-        )
+            : t,
+        ),
       );
 
       setSelectedTable((prev) =>
@@ -194,7 +211,7 @@ export default function Tables() {
               sessionToken: data.session?.token,
               has_additional_order: false,
             }
-          : prev
+          : prev,
       );
     } catch (err) {
       console.error('Failed to load table orders', err);
@@ -222,15 +239,15 @@ export default function Tables() {
           prev.map((order) =>
             order.id === printOrder.id
               ? { ...order, status: 'unserved' }
-              : order
-          )
+              : order,
+          ),
         );
 
         if (selectedTable) {
           setTables((prev) =>
             prev.map((t) =>
-              t.id === selectedTable.id ? { ...t, status: 'in_progress' } : t
-            )
+              t.id === selectedTable.id ? { ...t, status: 'in_progress' } : t,
+            ),
           );
         }
 
@@ -265,8 +282,8 @@ export default function Tables() {
                 has_additional_order: false,
                 sessionToken: undefined,
               }
-            : t
-        )
+            : t,
+        ),
       );
 
       console.log(`Session for table ${tableId} ended`);
@@ -295,7 +312,7 @@ export default function Tables() {
 
   const handleRegenerateAllQR = async () => {
     const ok = confirm(
-      'Are you sure you want to regenerate all QR codes? This will overwrite existing QR codes.'
+      'Are you sure you want to regenerate all QR codes? This will overwrite existing QR codes.',
     );
     if (!ok) return;
 
@@ -309,6 +326,41 @@ export default function Tables() {
     } catch (err) {
       console.error('Failed to regenerate QR codes', err);
       toast.error('Failed to regenerate QR codes');
+    }
+  };
+
+  const handleDownloadQR = async () => {
+    if (!qrPreview) return;
+
+    try {
+      const response = await fetch(qrPreview, {
+        mode: 'cors',
+        credentials: 'omit',
+        cache: 'no-store',
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to download QR: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = `Table-${qrTableNumber}-QR.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      URL.revokeObjectURL(objectUrl);
+      toast.success('QR downloaded successfully');
+    } catch (error) {
+      console.error('QR download failed:', error);
+
+      // Fallback: open image directly so user can manually save
+      window.open(qrPreview, '_blank', 'noopener,noreferrer');
+      toast.info('Opened QR in a new tab. Save it manually if needed.');
     }
   };
 
@@ -393,6 +445,8 @@ export default function Tables() {
           <h1 className="text-3xl font-bold">All Tables</h1>
 
           <div className="flex gap-2">
+            <AutoRefreshSelect value={refreshRate} onChange={setRefreshRate} />
+
             <Button onClick={handleAddTable}>Add New Table</Button>
 
             <Button onClick={handleRegenerateAllQR}>Regenerate All QR</Button>
@@ -560,7 +614,7 @@ export default function Tables() {
           printOrder
             ? printOrder.is_additional
               ? `Additional Order #${orders.findIndex(
-                  (o) => o.id === printOrder.id
+                  (o) => o.id === printOrder.id,
                 )}`
               : 'Main Order'
             : ''
@@ -649,15 +703,8 @@ export default function Tables() {
 
           <Button
             className="w-full bg-primary"
-            onClick={async () => {
-              if (!qrPreview) return;
-              const response = await fetch(qrPreview);
-              const blob = await response.blob();
-              const link = document.createElement('a');
-              link.href = URL.createObjectURL(blob);
-              link.download = `Table-${qrTableNumber}-QR.png`;
-              link.click();
-            }}
+            onClick={handleDownloadQR}
+            disabled={!qrPreview}
           >
             Download QR
           </Button>

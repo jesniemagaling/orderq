@@ -8,6 +8,9 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { useNavigate } from 'react-router';
+import { adminSocket } from '../lib/socket';
+import { playNotificationSound } from '../lib/sound';
+import AutoRefreshSelect from './ui/AutoRefreshSelect';
 
 interface Order {
   id: number;
@@ -52,6 +55,7 @@ export default function Orders() {
   const [retractModalOpen, setRetractModalOpen] = useState(false);
   const [retractReason, setRetractReason] = useState('');
   const [isRetracting, setIsRetracting] = useState(false);
+  const [refreshRate, setRefreshRate] = useState(30);
 
   // Fetch orders
   useEffect(() => {
@@ -68,6 +72,33 @@ export default function Orders() {
     fetchOrders();
   }, []);
 
+  useEffect(() => {
+    if (!refreshRate) return;
+    const id = window.setInterval(() => {
+      api
+        .get('/orders')
+        .then((res) => setOrders(res.data))
+        .catch((err) => console.error('Auto-refresh failed', err));
+    }, refreshRate * 1000);
+
+    return () => window.clearInterval(id);
+  }, [refreshRate]);
+
+  useEffect(() => {
+    const onNewOrder = () => {
+      playNotificationSound();
+      api
+        .get('/orders')
+        .then((res) => setOrders(res.data))
+        .catch((err) => console.error('Realtime refresh failed', err));
+    };
+
+    adminSocket.on('newOrder', onNewOrder);
+    return () => {
+      adminSocket.off('newOrder', onNewOrder);
+    };
+  }, []);
+
   // Close modal on Escape
   useEffect(() => {
     if (!modalOpen) return;
@@ -82,7 +113,7 @@ export default function Orders() {
   useEffect(() => {
     if (modalOpen && modalRef.current) {
       const focusable = modalRef.current.querySelector<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
       );
       focusable?.focus();
     }
@@ -166,8 +197,8 @@ export default function Orders() {
       await api.put(`/orders/${orderId}/pay`);
       setOrders((prev) =>
         prev.map((order) =>
-          order.id === orderId ? { ...order, payment_status: 'paid' } : order
-        )
+          order.id === orderId ? { ...order, payment_status: 'paid' } : order,
+        ),
       );
       if (selectedOrder?.id === orderId) {
         setSelectedOrder({ ...selectedOrder, payment_status: 'paid' });
@@ -205,8 +236,8 @@ export default function Orders() {
                 payment_status: 'retracted',
                 retract_reason: retractReason,
               }
-            : o
-        )
+            : o,
+        ),
       );
 
       // Update modal if currently viewing
@@ -302,8 +333,8 @@ export default function Orders() {
             ? 'desc'
             : 'asc'
           : key === 'order_id' || key === 'price' || key === 'quantity'
-          ? 'desc'
-          : 'asc',
+            ? 'desc'
+            : 'asc',
     }));
   };
 
@@ -313,12 +344,15 @@ export default function Orders() {
     <>
       <div className="flex items-center justify-between mb-3">
         <h1 className="text-3xl font-bold">Orders</h1>
-        <Button
-          className="flex items-center gap-2"
-          onClick={() => navigate('/order-logs')}
-        >
-          Orders Audit
-        </Button>
+        <div className="flex items-center gap-2">
+          <AutoRefreshSelect value={refreshRate} onChange={setRefreshRate} />
+          <Button
+            className="flex items-center gap-2"
+            onClick={() => navigate('/order-logs')}
+          >
+            Orders Audit
+          </Button>
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -349,7 +383,7 @@ export default function Orders() {
             {formatCurrency(
               orders
                 .filter((o) => o.payment_status === 'paid')
-                .reduce((s, o) => s + Number(o.total_amount), 0)
+                .reduce((s, o) => s + Number(o.total_amount), 0),
             )}
           </p>
         </div>
@@ -494,7 +528,7 @@ export default function Orders() {
 
                   {search &&
                     order.items.some((i) =>
-                      i.name.toLowerCase().includes(search.toLowerCase())
+                      i.name.toLowerCase().includes(search.toLowerCase()),
                     ) && (
                       <span className="block text-xs text-primary">
                         matching product
@@ -514,7 +548,7 @@ export default function Orders() {
                 </td>
                 <td
                   className={`text-center font-medium ${getStatusColor(
-                    order.payment_status
+                    order.payment_status,
                   )}`}
                 >
                   {order.payment_status.charAt(0).toUpperCase() +
@@ -575,8 +609,8 @@ export default function Orders() {
                 selectedOrder.payment_status === 'paid'
                   ? 'bg-green-100 text-green-700'
                   : selectedOrder.payment_status === 'unpaid'
-                  ? 'bg-yellow-100 text-yellow-700'
-                  : 'bg-red-100 text-red-700'
+                    ? 'bg-yellow-100 text-yellow-700'
+                    : 'bg-red-100 text-red-700'
               }`}
             >
               {selectedOrder.payment_status}
