@@ -3,8 +3,11 @@ import dotenv from 'dotenv';
 import app from './src/app.js';
 import { Server } from 'socket.io';
 import { startSessionCleanup } from './src/cron/sessionCleanup.js';
+import { applyMigrations } from './src/config/migrations.js';
+import { generateAllTableQR } from './src/utils/generateTableQR.js';
 
 dotenv.config();
+dotenv.config({ path: '.env.local' });
 
 const PORT = process.env.PORT || 5000;
 
@@ -13,7 +16,7 @@ const server = http.createServer(app);
 export const io = new Server(server, {
   cors: {
     origin: [process.env.FRONTEND_URL_1, process.env.FRONTEND_URL_2].filter(
-      Boolean
+      Boolean,
     ),
     methods: ['GET', 'POST'],
     credentials: true,
@@ -49,6 +52,13 @@ export const notifyMenuUpdate = (menuItem) => {
 export const notifySessionUpdate = (sessionData) => {
   io.emit('sessionUpdate', sessionData);
 };
+
+export const notifyOrderEstimateUpdated = (payload) => {
+  io.emit('orderEstimateUpdated', payload);
+};
+
+await applyMigrations();
+await generateAllTableQR();
 
 server.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

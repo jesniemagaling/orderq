@@ -9,6 +9,8 @@ import tableRoutes from './routes/tableRoutes.js';
 import salesRoutes from './routes/salesRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import paypalRoutes from './routes/paypalRoutes.js';
+import promotionRoutes from './routes/promotionRoutes.js';
+import feedbackRoutes from './routes/feedbackRoutes.js';
 import path from 'path';
 
 const app = express();
@@ -49,7 +51,7 @@ app.options(/.*/, cors(corsOptions));
 app.use(
   helmet({
     crossOriginResourcePolicy: false,
-  })
+  }),
 );
 
 // BODY PARSERS
@@ -84,6 +86,8 @@ app.use('/api/sessions', sessionRoutes);
 app.use('/api/tables', tableRoutes);
 app.use('/api/sales', salesRoutes);
 app.use('/api/paypal', paypalRoutes);
+app.use('/api/promotions', promotionRoutes);
+app.use('/api/feedback', feedbackRoutes);
 
 // STATIC FILES
 // Uploaded menu images
@@ -94,7 +98,7 @@ app.use(
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     },
-  })
+  }),
 );
 
 // QR codes
@@ -104,8 +108,11 @@ app.use(
     setHeaders: (res) => {
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
     },
-  })
+  }),
 );
 
 app.use('/api/sessions/verify/:token', (req, res, next) => {

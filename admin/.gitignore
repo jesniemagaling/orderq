@@ -16,3 +16,6 @@ build/
 # Docker
 *.pid
 docker-data/
+
+# Env overrides
+.env.local

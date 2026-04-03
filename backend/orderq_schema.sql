@@ -169,3 +169,57 @@ CREATE TABLE IF NOT EXISTS payments (
     PRIMARY KEY (id),
     FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- POST-DEPLOY SAFE EXTENSIONS
+ALTER TABLE orders
+  ADD COLUMN IF NOT EXISTS subtotal_amount DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER total_amount,
+  ADD COLUMN IF NOT EXISTS discount_type ENUM('none','pwd','senior','promo') DEFAULT 'none' AFTER subtotal_amount,
+  ADD COLUMN IF NOT EXISTS discount_amount DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER discount_type,
+  ADD COLUMN IF NOT EXISTS promo_code VARCHAR(64) NULL AFTER discount_amount,
+  ADD COLUMN IF NOT EXISTS tax_rate DECIMAL(5,4) NOT NULL DEFAULT 0.1000 AFTER promo_code,
+  ADD COLUMN IF NOT EXISTS tax_amount DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER tax_rate,
+  ADD COLUMN IF NOT EXISTS waiting_minutes INT NOT NULL DEFAULT 15 AFTER tax_amount,
+  ADD COLUMN IF NOT EXISTS estimated_ready_at TIMESTAMP NULL AFTER waiting_minutes;
+
+ALTER TABLE tables
+  ADD COLUMN IF NOT EXISTS qr_nonce VARCHAR(64) NULL AFTER qr_code;
+
+UPDATE tables
+SET qr_nonce = REPLACE(UUID(), '-', '')
+WHERE qr_nonce IS NULL OR qr_nonce = '';
+
+CREATE TABLE IF NOT EXISTS promotions (
+  id INT NOT NULL AUTO_INCREMENT,
+  code VARCHAR(64) NOT NULL UNIQUE,
+  title VARCHAR(100) NOT NULL,
+  type ENUM('percent','fixed') NOT NULL DEFAULT 'percent',
+  value DECIMAL(10,2) NOT NULL,
+  minimum_order DECIMAL(10,2) NOT NULL DEFAULT 0,
+  starts_at TIMESTAMP NULL,
+  ends_at TIMESTAMP NULL,
+  is_active BOOLEAN NOT NULL DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  INDEX idx_promotions_active (is_active),
+  INDEX idx_promotions_window (starts_at, ends_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT IGNORE INTO promotions (code, title, type, value, minimum_order, is_active) VALUES
+('FRIESFREE', 'Free Fries Promo', 'fixed', 30.00, 229.00, 1),
+('PIZZASLICE', 'Free Pizza Slice Promo', 'fixed', 40.00, 129.00, 1);
+
+CREATE TABLE IF NOT EXISTS feedback (
+  id INT NOT NULL AUTO_INCREMENT,
+  session_id INT NULL,
+  order_id INT NULL,
+  table_id INT NULL,
+  rating TINYINT NOT NULL,
+  comment TEXT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  INDEX idx_feedback_order (order_id),
+  INDEX idx_feedback_table (table_id),
+  CONSTRAINT fk_feedback_session FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE SET NULL,
+  CONSTRAINT fk_feedback_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL,
+  CONSTRAINT fk_feedback_table FOREIGN KEY (table_id) REFERENCES tables(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
