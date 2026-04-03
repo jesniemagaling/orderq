@@ -2,6 +2,28 @@ import { db } from '../config/db.js';
 import crypto from 'crypto';
 import { notifyTableStatus, notifySessionUpdate } from '../../index.js';
 
+const resolveCustomerFrontendUrl = (req) => {
+  const candidates = [
+    process.env.CUSTOMER_FRONTEND_URL,
+    process.env.FRONTEND_URL_CUSTOMER,
+    process.env.FRONTEND_URL_2,
+    process.env.FRONTEND_URL,
+    process.env.FRONTEND_URL_1,
+  ].filter(Boolean);
+
+  if (candidates.length > 0) {
+    return String(candidates[0]).replace(/\/$/, '');
+  }
+
+  const host = String(req.get('host') || 'localhost:5000');
+  const hostOnly = host.split(':')[0];
+  const proto = String(
+    req.headers['x-forwarded-proto'] || req.protocol || 'http',
+  );
+
+  return `${proto}://${hostOnly}:5174`;
+};
+
 // Create or reuse active session
 export const createSession = async (req, res) => {
   const { table_number } = req.body;
@@ -17,7 +39,7 @@ export const createSession = async (req, res) => {
 
     const [tables] = await connection.query(
       'SELECT * FROM tables WHERE table_number = ?',
-      [table_number]
+      [table_number],
     );
 
     if (tables.length === 0) {
@@ -30,7 +52,7 @@ export const createSession = async (req, res) => {
     const [activeSession] = await connection.query(
       `SELECT * FROM sessions 
         WHERE table_id = ? AND is_active = 1 AND expires_at > NOW() LIMIT 1`,
-      [table.id]
+      [table.id],
     );
 
     if (activeSession.length > 0) {
@@ -63,7 +85,7 @@ export const createSession = async (req, res) => {
     await connection.query(
       `INSERT INTO sessions (table_id, token, created_at, expires_at, is_active)
         VALUES (?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 2 HOUR), 1)`,
-      [table.id, token]
+      [table.id, token],
     );
 
     if (table.status === 'available') {
@@ -117,7 +139,7 @@ export const verifySession = async (req, res) => {
         JOIN tables t ON s.table_id = t.id
         WHERE s.token = ? AND s.is_active = 1 AND s.expires_at > NOW()
         LIMIT 1`,
-      [token]
+      [token],
     );
 
     if (rows.length === 0) {
@@ -150,7 +172,7 @@ export const endSession = async (req, res) => {
         JOIN tables t ON s.table_id = t.id
         WHERE s.token = ? AND s.is_active = 1
         LIMIT 1`,
-      [token]
+      [token],
     );
 
     if (sessions.length === 0) {
@@ -165,7 +187,7 @@ export const endSession = async (req, res) => {
       `UPDATE sessions 
         SET is_active = 0, expires_at = NOW()
         WHERE id = ?`,
-      [session.id]
+      [session.id],
     );
 
     // Mark table back to available
@@ -173,7 +195,7 @@ export const endSession = async (req, res) => {
       `UPDATE tables 
         SET status = 'available'
         WHERE id = ?`,
-      [session.table_id]
+      [session.table_id],
     );
 
     // Notify cashier dashboard about table status change
@@ -205,13 +227,27 @@ export const endSession = async (req, res) => {
 // QR scanning
 export const scanSessionFromQR = async (req, res) => {
   const { table_number } = req.params;
+  const nonce = String(req.query?.nonce || '');
 
   console.log('QR Scan Request → table_number =', table_number);
 
   try {
+    const [tableRows] = await db.query(
+      'SELECT id, qr_nonce FROM tables WHERE table_number = ? LIMIT 1',
+      [table_number],
+    );
+
+    if (!tableRows.length) {
+      return res.status(404).send('Table not found');
+    }
+
+    if (!nonce || nonce !== String(tableRows[0].qr_nonce || '')) {
+      return res.status(400).send('Invalid or outdated QR code');
+    }
+
     const sessionData = await createSession(
       { body: { table_number } },
-      {} // empty response forces return of object
+      {}, // empty response forces return of object
     );
 
     console.log('sessionData returned from createSession:', sessionData);
@@ -226,12 +262,10 @@ export const scanSessionFromQR = async (req, res) => {
       return res.status(500).send('Token missing');
     }
 
-    console.log('FRONTEND_URL =', process.env.FRONTEND_URL);
-
-    const FE = process.env.FRONTEND_URL?.replace(/\/$/, '');
+    const FE = resolveCustomerFrontendUrl(req);
 
     if (!FE) {
-      console.error('FRONTEND_URL is missing');
+      console.error('Customer frontend URL is missing');
       return res.status(500).send('Frontend URL not configured');
     }
 

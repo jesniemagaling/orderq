@@ -5,6 +5,29 @@ import { debugLog, debugError } from '../utils/logger.js';
 import fs from 'fs';
 import path from 'path';
 import QRCode from 'qrcode';
+import crypto from 'crypto';
+
+const resolveBackendUrl = () => {
+  if (process.env.BACKEND_URL) {
+    return String(process.env.BACKEND_URL).replace(/\/$/, '');
+  }
+
+  const customerFrontend =
+    process.env.CUSTOMER_FRONTEND_URL ||
+    process.env.FRONTEND_URL_CUSTOMER ||
+    process.env.FRONTEND_URL_2;
+
+  if (customerFrontend) {
+    try {
+      const u = new URL(String(customerFrontend));
+      return `${u.protocol}//${u.hostname}:5000`;
+    } catch {
+      // ignore parse errors and use fallback below
+    }
+  }
+
+  return `http://localhost:${process.env.PORT || 5000}`;
+};
 
 // Create a new table with QR code generation
 export const createTable = async (req, res) => {
@@ -18,9 +41,11 @@ export const createTable = async (req, res) => {
     }
 
     // Save DB
+    const qrNonce = crypto.randomBytes(16).toString('hex');
+
     const [result] = await db.query(
-      `INSERT INTO tables (table_number, status) VALUES (?, 'available')`,
-      [table_number]
+      `INSERT INTO tables (table_number, status, qr_nonce) VALUES (?, 'available', ?)`,
+      [table_number, qrNonce],
     );
 
     const newId = result.insertId;
@@ -34,7 +59,8 @@ export const createTable = async (req, res) => {
     const fileName = `table-${table_number}.png`;
     const filePath = path.join(qrFolder, fileName);
 
-    const qrData = `${process.env.BACKEND_URL}/api/sessions/scan/${table_number}`;
+    const backendUrl = resolveBackendUrl();
+    const qrData = `${backendUrl}/api/sessions/scan/${table_number}?nonce=${qrNonce}`;
 
     await QRCode.toFile(filePath, qrData);
 
@@ -105,7 +131,7 @@ export const regenerateTableQR = async (req, res) => {
   try {
     const [rows] = await db.query(
       'SELECT table_number FROM tables WHERE id = ?',
-      [id]
+      [id],
     );
 
     if (!rows.length) {
@@ -121,10 +147,14 @@ export const regenerateTableQR = async (req, res) => {
 
     const qrPath = path.join(qrFolder, `table-${table_number}.png`);
 
-    const qrData = `${process.env.BACKEND_URL.replace(
-      /\/$/,
-      ''
-    )}/api/sessions/scan/${table_number}`;
+    const newNonce = crypto.randomBytes(16).toString('hex');
+
+    await db.query('UPDATE tables SET qr_nonce = ? WHERE id = ?', [
+      newNonce,
+      id,
+    ]);
+
+    const qrData = `${resolveBackendUrl()}/api/sessions/scan/${table_number}?nonce=${newNonce}`;
 
     await QRCode.toFile(qrPath, qrData, {
       width: 300,
@@ -206,7 +236,7 @@ export const updateTableStatus = async (req, res) => {
   try {
     const [result] = await db.query(
       'UPDATE tables SET status = ? WHERE id = ?',
-      [status, id]
+      [status, id],
     );
 
     if (result.affectedRows === 0) {
@@ -232,7 +262,7 @@ export const getTableDetails = async (req, res) => {
     // Find table
     const [tableRows] = await db.query(
       'SELECT id, table_number, status FROM tables WHERE id = ?',
-      [table_id]
+      [table_id],
     );
 
     if (tableRows.length === 0) {
@@ -248,7 +278,7 @@ export const getTableDetails = async (req, res) => {
         WHERE table_id = ? AND is_active = 1 
         ORDER BY created_at DESC 
         LIMIT 1`,
-      [table_id]
+      [table_id],
     );
 
     if (sessionRows.length === 0) {
@@ -270,11 +300,13 @@ export const getTableDetails = async (req, res) => {
           o.status,
           o.payment_status,
           o.payment_method,
+          o.waiting_minutes,
+          o.estimated_ready_at,
           o.created_at
         FROM orders o
         WHERE o.session_id = ?
         ORDER BY o.created_at ASC`,
-      [session.id]
+      [session.id],
     );
 
     if (orders.length === 0) {
@@ -301,7 +333,7 @@ export const getTableDetails = async (req, res) => {
           FROM order_items oi
           JOIN menu m ON oi.menu_id = m.id
           WHERE oi.order_id IN (?)`,
-        [orderIds]
+        [orderIds],
       );
     }
 
@@ -323,7 +355,7 @@ export const getTableDetails = async (req, res) => {
 
     // Determine if additional unpaid orders exist
     const unpaidOrders = formattedOrders.filter(
-      (o) => o.payment_status === 'unpaid'
+      (o) => o.payment_status === 'unpaid',
     );
     const has_additional_order = unpaidOrders.length > 1;
 
@@ -342,19 +374,18 @@ export const getTableDetails = async (req, res) => {
 export const getAllTableQR = async (req, res) => {
   try {
     const [tables] = await db.query(
-      'SELECT id, table_number, qr_code FROM tables'
+      'SELECT id, table_number, qr_code, qr_nonce FROM tables',
     );
 
-    const base = String(
-      process.env.BACKEND_URL || 'https://orderq-backend.onrender.com'
-    ).replace(/\/$/, '');
+    const base = resolveBackendUrl();
 
     const formatted = tables.map((t) => {
       const file = t.qr_code ? t.qr_code.replace(/^\//, '') : '';
+      const version = t.qr_nonce ? `?v=${encodeURIComponent(t.qr_nonce)}` : '';
       return {
         id: t.id,
         table_number: t.table_number,
-        qr_image_url: file ? `${base}/${file}` : null,
+        qr_image_url: file ? `${base}/${file}${version}` : null,
       };
     });
 

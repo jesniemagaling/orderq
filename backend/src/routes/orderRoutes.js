@@ -10,6 +10,7 @@ import {
   markOrderAsServed,
   retractOrder,
   getOrderAudit,
+  updateOrderEstimate,
 } from '../controllers/orderController.js';
 
 const router = express.Router();
@@ -27,6 +28,7 @@ router.get('/:id', getOrderDetails);
 // PUT routes
 router.put('/:id/pay', markOrderAsPaid);
 router.put('/:id/serve', markOrderAsServed);
+router.put('/:id/estimate', updateOrderEstimate);
 router.put('/:orderId/cancel', cancelOrder);
 router.put('/:id/retract', retractOrder);
 
