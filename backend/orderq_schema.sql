@@ -171,18 +171,17 @@ CREATE TABLE IF NOT EXISTS payments (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- POST-DEPLOY SAFE EXTENSIONS
-ALTER TABLE orders
-  ADD COLUMN IF NOT EXISTS subtotal_amount DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER total_amount,
-  ADD COLUMN IF NOT EXISTS discount_type ENUM('none','pwd','senior','promo') DEFAULT 'none' AFTER subtotal_amount,
-  ADD COLUMN IF NOT EXISTS discount_amount DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER discount_type,
-  ADD COLUMN IF NOT EXISTS promo_code VARCHAR(64) NULL AFTER discount_amount,
-  ADD COLUMN IF NOT EXISTS tax_rate DECIMAL(5,4) NOT NULL DEFAULT 0.1000 AFTER promo_code,
-  ADD COLUMN IF NOT EXISTS tax_amount DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER tax_rate,
-  ADD COLUMN IF NOT EXISTS waiting_minutes INT NOT NULL DEFAULT 15 AFTER tax_amount,
-  ADD COLUMN IF NOT EXISTS estimated_ready_at TIMESTAMP NULL AFTER waiting_minutes;
+-- Add missing columns individually (avoids compatibility issues with some MySQL images)
+ALTER TABLE orders ADD COLUMN subtotal_amount DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER total_amount;
+ALTER TABLE orders ADD COLUMN discount_type ENUM('none','pwd','senior','promo') DEFAULT 'none' AFTER subtotal_amount;
+ALTER TABLE orders ADD COLUMN discount_amount DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER discount_type;
+ALTER TABLE orders ADD COLUMN promo_code VARCHAR(64) NULL AFTER discount_amount;
+ALTER TABLE orders ADD COLUMN tax_rate DECIMAL(5,4) NOT NULL DEFAULT 0.1000 AFTER promo_code;
+ALTER TABLE orders ADD COLUMN tax_amount DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER tax_rate;
+ALTER TABLE orders ADD COLUMN waiting_minutes INT NOT NULL DEFAULT 15 AFTER tax_amount;
+ALTER TABLE orders ADD COLUMN estimated_ready_at TIMESTAMP NULL AFTER waiting_minutes;
 
-ALTER TABLE tables
-  ADD COLUMN IF NOT EXISTS qr_nonce VARCHAR(64) NULL AFTER qr_code;
+ALTER TABLE tables ADD COLUMN qr_nonce VARCHAR(64) NULL AFTER qr_code;
 
 UPDATE tables
 SET qr_nonce = REPLACE(UUID(), '-', '')
