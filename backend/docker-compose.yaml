@@ -3,7 +3,6 @@ version: '3.9'
 services:
   mysql:
     image: mysql:8.0
-    container_name: orderq-mysql
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
@@ -18,7 +17,6 @@ services:
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
-    container_name: orderq-phpmyadmin
     restart: always
     environment:
       PMA_HOST: mysql
@@ -31,7 +29,6 @@ services:
 
   backend:
     build: .
-    container_name: orderq-backend
     restart: always
     ports:
       - '5000:5000'

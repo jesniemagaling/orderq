@@ -3,7 +3,6 @@ version: '3.9'
 services:
   mysql:
     image: mysql:8.0
-    container_name: orderq-mysql
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
@@ -20,14 +19,14 @@ services:
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
-    container_name: orderq-phpmyadmin
     restart: always
     environment:
       PMA_HOST: mysql
       PMA_USER: root
       PMA_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    # Make host port configurable via PHPMYADMIN_PORT in .env (defaults to 8080)
     ports:
-      - '8080:80'
+      - '${PHPMYADMIN_PORT:-8080}:80'
     depends_on:
       - mysql
     networks:
@@ -36,7 +35,6 @@ services:
   backend:
     build:
       context: ./backend
-    container_name: orderq-backend
     restart: always
     ports:
       - '5000:5000'
@@ -62,9 +60,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: orderq-frontend
     ports:
-      - '5174:5173'
+      - '5174:80'
     volumes:
       - ./frontend:/app
       - /app/node_modules
@@ -73,7 +70,6 @@ services:
       - WATCHPACK_POLLING=true
     depends_on:
       - backend
-    command: ['npm', 'run', 'dev']
     networks:
       - orderq-network
 
@@ -81,16 +77,14 @@ services:
     build:
       context: ./admin
       dockerfile: Dockerfile
-    container_name: orderq-admin
-    ports:
-      - '5173:5173'
     volumes:
       - ./admin:/app
       - /app/node_modules
     environment:
       - CHOKIDAR_USEPOLLING=true
       - WATCHPACK_POLLING=true
-    command: ['npm', 'run', 'dev']
+    ports:
+      - '5173:80'
     networks:
       - orderq-network
 

@@ -223,3 +223,44 @@ CREATE TABLE IF NOT EXISTS feedback (
   CONSTRAINT fk_feedback_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL,
   CONSTRAINT fk_feedback_table FOREIGN KEY (table_id) REFERENCES tables(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ==================================================
+-- Demo data for showcase (tables, sessions, orders)
+-- ==================================================
+-- Create demo sessions for tables 1..5
+INSERT INTO sessions (table_id, token, is_active) VALUES
+(1, 'demo-token-1', 1),
+(2, 'demo-token-2', 1),
+(3, 'demo-token-3', 1),
+(4, 'demo-token-4', 1),
+(5, 'demo-token-5', 1);
+
+-- Insert a few demo orders and order items
+SET @s1 = (SELECT id FROM sessions WHERE token = 'demo-token-1');
+INSERT INTO orders (session_id, table_id, status, payment_method, payment_status, total_amount)
+VALUES (@s1, 1, 'pending', 'cash', 'unpaid', 270.00);
+SET @o1 = LAST_INSERT_ID();
+INSERT INTO order_items (order_id, menu_id, quantity, price) VALUES
+(@o1, 1, 1, 150.00),
+(@o1, 2, 1, 120.00);
+
+SET @s2 = (SELECT id FROM sessions WHERE token = 'demo-token-2');
+INSERT INTO orders (session_id, table_id, status, payment_method, payment_status, total_amount)
+VALUES (@s2, 2, 'unserved', 'gcash', 'paid', 180.00);
+SET @o2 = LAST_INSERT_ID();
+INSERT INTO order_items (order_id, menu_id, quantity, price) VALUES
+(@o2, 3, 1, 180.00);
+
+SET @s3 = (SELECT id FROM sessions WHERE token = 'demo-token-3');
+INSERT INTO orders (session_id, table_id, status, payment_method, payment_status, total_amount)
+VALUES (@s3, 3, 'served', 'cash', 'paid', 300.00);
+SET @o3 = LAST_INSERT_ID();
+INSERT INTO order_items (order_id, menu_id, quantity, price) VALUES
+(@o3, 1, 2, 150.00);
+
+-- Optional: demo feedback
+INSERT INTO feedback (session_id, order_id, table_id, rating, comment)
+VALUES
+(@s1, @o1, 1, 4, 'Nice coffee'),
+(@s3, @o3, 3, 5, 'Great service');
+
